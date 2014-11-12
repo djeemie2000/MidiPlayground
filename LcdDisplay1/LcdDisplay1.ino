@@ -38,6 +38,7 @@
 
 // include the library code:
 #include <LiquidCrystal.h>
+#include "MidiSerial.h"
 
 class CMidiSerial
 {
