@@ -40,38 +40,6 @@
 #include <LiquidCrystal.h>
 #include "MidiSerial.h"
 
-class CMidiSerial
-{
-public:
-  CMidiSerial(){}
-  
-  void Begin(int Baudrate)
-  {
-    Serial.begin(Baudrate);
-  }
-  void ControlChange(byte Channel, byte Controller, byte Value)
-  {
-    byte Operation = 0xB0 | (Channel & 0x0F);
-    Serial.write(Operation);
-    Serial.write(Controller & 0x7F);
-    Serial.write(Value & 0x7F);
-  }
-  void NoteOn(byte Channel, byte Note, byte Velocity)
-  {
-    byte Operation = 0x90 | (Channel & 0x0F);
-    Serial.write(Operation);
-    Serial.write(Note & 0x7F);
-    Serial.write(Velocity & 0x7F);    
-  }
-  void NoteOff(byte Channel, byte Note, byte Velocity)
-  {
-    byte Operation = 0x80 | (Channel & 0x0F);
-    Serial.write(Operation);
-    Serial.write(Note & 0x7F);
-    Serial.write(Velocity & 0x7F);    
-  }
-  //TODO pitchbend
-};
 
 //TODO class SSoftMidiSerial -> Begin(int RxPin, int TxPin); //always 31250 baudrate
 
@@ -79,14 +47,17 @@ public:
 const int Button1Pin = 8;
 const int Button2Pin = 9;
 const int Pot1Pin = A0;
+const int Pot2Pin = A1;
 
 // initialize the library with the numbers of the interface pins
+const int NumPots = 2;
+
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 CMidiSerial MidiSerial;
 int MidiControllerParam = 50;
 int MidiControllerValue = 64;
 
-void DisplayInteger(int Value, int x, int y)
+void DisplayInteger(LiquidCrystal& lcd, int Value, int x, int y)
 {
   // does not handle negative numbers!
   // max 3 digits
@@ -103,11 +74,91 @@ void DisplayInteger(int Value, int x, int y)
   lcd.print(Value);
 }
 
+class CController
+{
+public:
+  CController()
+: 
+    m_Lcd(12, 11, 5, 4, 3, 2)
+      , m_MidiSerial()
+      {
+        for(int idx = 0; idx<NumPots; ++idx)
+        {
+          m_Controller[idx].s_Param = 0x50 + idx;
+          m_Controller[idx].s_Value = 64;
+        }
+      }
+
+  void Setup()
+  {
+    m_MidiSerial.Begin(9600);    
+
+    // set up the LCD's number of columns and rows: 
+    m_Lcd.begin(16, 2);
+    
+    m_Lcd.setCursor(0,0);
+    m_Lcd.print("C");
+    m_Lcd.setCursor(0,1);
+    m_Lcd.print("V");
+    // default: change value  
+    m_Lcd.setCursor(0,1);
+    m_Lcd.blink();
+
+  }
+
+  void Update(bool AssignPressed, int PotValue[NumPots])
+  {
+    if(AssignPressed)
+    {
+      // adjust parameters
+      for(int idx = 0; idx<NumPots; ++idx)
+      {
+        if(m_Controller[idx].s_Param != PotValue[idx])
+        {
+          m_Controller[idx].s_Param = PotValue[idx];
+          // controller param has changed => adjust display
+
+        }
+      }
+      m_Lcd.setCursor(0,0);      
+    }
+    else
+    {
+      // adjust value
+      for(int idx = 0; idx<NumPots; ++idx)
+      {
+        if(m_Controller[idx].s_Value != PotValue[idx])
+        {
+          m_Controller[idx].s_Value = PotValue[idx];
+          // controller value has changed => adjust display, send midi cc
+          MidiSerial.ControlChange(1, MidiControllerParam, MidiControllerValue);
+          DisplayInteger(m_Lcd, MidiControllerValue, idx*4+1, 1);        
+        }
+
+      }
+      // indicate Value change active
+      m_Lcd.setCursor(0,1);      
+    }
+  }
+
+private:
+  struct SMidiController
+  {
+    byte s_Param;
+    byte s_Value;
+  };
+
+  LiquidCrystal   m_Lcd;
+  CMidiSerial     m_MidiSerial;
+  SMidiController m_Controller[NumPots];
+
+};
+
 
 void setup() {
   pinMode(Button1Pin, INPUT_PULLUP);
   pinMode(Button2Pin, INPUT_PULLUP);
-  
+
   MidiSerial.Begin(9600);
 
   // set up the LCD's number of columns and rows: 
@@ -121,24 +172,23 @@ void setup() {
   lcd.blink();
 
   // show initial values
-  DisplayInteger(MidiControllerParam, 1, 0);
-  DisplayInteger(MidiControllerValue, 1, 1);
+  DisplayInteger(lcd, MidiControllerParam, 1, 0);
+  DisplayInteger(lcd, MidiControllerValue, 1, 1);
 }
 
 
 void loop() {
 
   int Pot1Value = analogRead(Pot1Pin)/8;// [0,1023] to [0,127]
+  bool AssignButtonPressed = (LOW==digitalRead(Button1Pin));
 
-
-  bool Button1Pressed = (LOW==digitalRead(Button1Pin));
-  if(Button1Pressed)
+  if(AssignButtonPressed)
   { // assign midi controller param
     if(Pot1Value != MidiControllerParam)
     {
       MidiControllerParam = Pot1Value;      
       //update display
-      DisplayInteger(MidiControllerParam, 1, 0);
+      DisplayInteger(lcd, MidiControllerParam, 1, 0);
     }
 
     lcd.setCursor(0,0);
@@ -151,7 +201,7 @@ void loop() {
       // send midi control change
       MidiSerial.ControlChange(1, MidiControllerParam, MidiControllerValue);
       //update display
-      DisplayInteger(MidiControllerValue, 1, 1);
+      DisplayInteger(lcd, MidiControllerValue, 1, 1);
     }
 
     lcd.setCursor(0,1);
