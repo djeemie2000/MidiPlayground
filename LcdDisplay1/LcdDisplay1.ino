@@ -75,43 +75,52 @@ public:
     //TODO display initial!
     for(int idx = 0; idx<NumPots; ++idx)
     {
-        DisplayInteger(m_Lcd, m_Controller[idx].s_Param, idx*4+1, 0); 
-        DisplayInteger(m_Lcd, m_Controller[idx].s_Value, idx*4+1, 1); 
+      DisplayInteger(m_Lcd, m_Controller[idx].s_Param, idx*4+1, 0); 
+      DisplayInteger(m_Lcd, m_Controller[idx].s_Value, idx*4+1, 1); 
     }
   }
 
   void Update(bool AssignPressed, int PotValue[NumPots])
   {
-    if(AssignPressed)
+    // first, check if pots have been moved
+    for(int idx = 0; idx<NumPots; ++idx)
     {
-      // adjust parameters
-      for(int idx = 0; idx<NumPots; ++idx)
+      if(PotValue[idx]!=m_PrevPotValue[idx])
       {
-        if(m_Controller[idx].s_Param != PotValue[idx])
+        m_PrevPotValue[idx] = PotValue[idx];
+
+        if(AssignPressed)
         {
-          m_Controller[idx].s_Param = PotValue[idx];
-          // controller param has changed => adjust display
-          DisplayInteger(m_Lcd, m_Controller[idx].s_Param, idx*4+1, 0);     
+          if(m_Controller[idx].s_Param != PotValue[idx])
+          {
+            m_Controller[idx].s_Param = PotValue[idx];
+            // controller param has changed => adjust display
+            DisplayInteger(m_Lcd, m_Controller[idx].s_Param, idx*4+1, 0);     
+          }
+        }
+        else
+        {
+          if(m_Controller[idx].s_Value != PotValue[idx])
+          {
+            m_Controller[idx].s_Value = PotValue[idx];
+            // controller value has changed => adjust display, send midi cc
+            m_MidiSerial.ControlChange(1, m_Controller[idx].s_Param, m_Controller[idx].s_Value);
+            DisplayInteger(m_Lcd, m_Controller[idx].s_Value, idx*4+1, 1);        
+          }
+
         }
       }
+    }
+
+    if(AssignPressed)
+    {
+      // indicate controller change active
       m_Lcd.setCursor(0,0);      
     }
     else
     {
-      // adjust value
-      for(int idx = 0; idx<NumPots; ++idx)
-      {
-        if(m_Controller[idx].s_Value != PotValue[idx])
-        {
-          m_Controller[idx].s_Value = PotValue[idx];
-          // controller value has changed => adjust display, send midi cc
-          m_MidiSerial.ControlChange(1, m_Controller[idx].s_Param, m_Controller[idx].s_Value);
-          DisplayInteger(m_Lcd, m_Controller[idx].s_Value, idx*4+1, 1);        
-        }
-
-      }
       // indicate Value change active
-      m_Lcd.setCursor(0,1);      
+      m_Lcd.setCursor(0,1);
     }
   }
 
@@ -122,6 +131,7 @@ private:
     byte s_Value;
   };
 
+  int             m_PrevPotValue[NumPots];
   LiquidCrystal   m_Lcd;
   CMidiSerial     m_MidiSerial;
   SMidiController m_Controller[NumPots];
@@ -144,5 +154,10 @@ void loop() {
 
   Controller.Update(AssignButtonPressed, PotValue);
 }
+
+
+
+
+
 
 
