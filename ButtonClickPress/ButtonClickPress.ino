@@ -38,14 +38,18 @@ void loop()
   {
     // 
     g_ButtonPressed = ButtonPressed;
-    g_ButtonCounter = 0;
     
-    if(g_ButtonPressed)
-    { // off -> on
-      // => toggle red led
-      g_RedLedActive = ! g_RedLedActive;
-      digitalWrite(RedLedPin, g_RedLedActive ? 128 : LOW);
+    if(!g_ButtonPressed)
+    { // on -> off
+      // if short press => toggle red led
+      if(g_ButtonCounter<1000)
+      {
+        g_RedLedActive = ! g_RedLedActive;
+        digitalWrite(RedLedPin, g_RedLedActive ? 128 : LOW);
+      }
     }
+
+    g_ButtonCounter = 0;
   }
   else if(g_ButtonPressed)
   {
