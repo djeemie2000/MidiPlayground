@@ -82,8 +82,54 @@ private:
   EButtonState m_ButtonState;  
 };
 
+class CPeriodicTrigger
+{
+  public:
+  CPeriodicTrigger()
+  : m_Period(1)
+  , m_Duration(1)
+  , m_Counter(1)
+  {
+  }
+  
+  void Configure(int Period, int Duration)
+  {
+    m_Period = Period;
+    m_Duration = Duration;
+  }
+  
+  void Update()
+  {
+    if(1<m_Counter)
+    {
+      --m_Counter;
+    }
+    else
+    {
+      m_Counter = m_Period;
+    }
+  }
+  
+  bool TriggerOn() const
+  {
+    return (m_Counter == 1);
+  }
+  
+  bool TriggerOff() const
+  {
+    int TriggerOff = m_Period - m_Duration;
+    return (m_Counter == TriggerOff);
+  }
+  
+  private:
+    int m_Period;
+    int m_Duration;
+    int m_Counter;
+};
+
 CButtonHandler ButtonHandler1;
 CButtonHandler ButtonHandler2;
+CPeriodicTrigger StepTrigger;
 
 
 void setup()
@@ -95,8 +141,12 @@ void setup()
   pinMode(RedLedPin2, OUTPUT);
   pinMode(GreenLedPin2, OUTPUT);
   pinMode(ButtonPin2, INPUT_PULLUP);
+  
+  pinMode(13, OUTPUT);
 
   Serial.begin(9600); 
+  
+  StepTrigger.Configure(1000, 100);
 
   for(int Repeat = 0; Repeat<5; ++Repeat)
   {
@@ -125,6 +175,9 @@ void loop()
   bool Button2Pressed = (digitalRead(ButtonPin2)==LOW);
 
   ButtonHandler1.Update(Button1Pressed);
+  ButtonHandler2.Update(Button2Pressed);
+  StepTrigger.Update();
+
   if(ButtonHandler1.ButtonClicked())
   { // toggle red led
     g_RedLedActive = ! g_RedLedActive;
@@ -137,7 +190,6 @@ void loop()
     digitalWrite(GreenLedPin, g_GreenLedActive ? HIGH : LOW);  
   }
 
-  ButtonHandler2.Update(Button2Pressed);
   if(ButtonHandler2.ButtonClicked())
   { // toggle red led
     g_RedLed2Active = ! g_RedLed2Active;
@@ -149,7 +201,16 @@ void loop()
     g_GreenLed2Active = ! g_GreenLed2Active;
     digitalWrite(GreenLedPin2, g_GreenLed2Active ? HIGH : LOW);  
   }
-
+  
+  if(StepTrigger.TriggerOn())
+  {
+    digitalWrite(13, HIGH);
+  }
+  if(StepTrigger.TriggerOff())
+  {
+    digitalWrite(13, LOW);
+  }
+  
   delay(1);//delay 1 millisecond
 }
 
