@@ -26,12 +26,13 @@
 #include <LCD.h>
 #include <LiquidCrystal_I2C.h>
 
-//const int NotePin = A0;
-//const int DurationPin = A1;
 const int ButtonPin = 7; 
 
-const int RotaryPin1 = 3;
-const int RotaryPin2 = 4;
+//#define ENC_A 14
+//#define ENC_B 15
+#define ENC_PORT PINC //PINC is the bank where pin 14 ad 15 are the first two pins
+const int RotaryPin1 = 14;
+const int RotaryPin2 = 15;
 
 LiquidCrystal_I2C	lcd(0x27,2,1,0,4,5,6,7); // 0x27 is the I2C bus address for an unmodified backpack
 uint8_t RotaryCodes;
@@ -50,21 +51,26 @@ void setup()
   lcd.begin (16,2); // for 16 x 2 LCD module
   lcd.setBacklightPin(3,POSITIVE);
   lcd.setBacklight(HIGH);//backlight on
-  }
+}
 
 void loop() 
 {  
   bool ButtonPressed = (LOW==digitalRead(ButtonPin));
+  if(ButtonPressed)
+  {
+    Cnt = 0;
+  }
     
   RotaryCodes = RotaryCodes << 2;
-  if(LOW==digitalRead(RotaryPin1) && LOW==digitalRead(RotaryPin1))
-  {
-    RotaryCodes |= 0x01;
-  }
-  if(LOW==digitalRead(RotaryPin2) && LOW==digitalRead(RotaryPin2))
-  {
-    RotaryCodes |= 0x02;
-  }
+//  if(LOW==digitalRead(RotaryPin1) && LOW==digitalRead(RotaryPin1))
+//  {
+//    RotaryCodes |= 0x01;
+//  }
+//  if(LOW==digitalRead(RotaryPin2) && LOW==digitalRead(RotaryPin2))
+//  {
+//    RotaryCodes |= 0x02;
+//  }
+  RotaryCodes |= ( ENC_PORT & 0x03 );  //add current state. mask is 0x00000011 because using ports 14 and 15 on PORTC bus
   
   static int tbl[16] =
   { 0, +1, -1, 0,
@@ -77,7 +83,9 @@ void loop()
     // position 0 = 11 to 10, can't really do anything
   };
   
-  int Mod = tbl[RotaryCodes & 0x0F];
+  uint8_t TblIndex = RotaryCodes & 0x0F;
+//  uint8_t TblIndex = (RotaryCodes & 0x03) | ((RotaryCodes>>6<<2) & 0x0F);
+  int Mod = tbl[TblIndex];
   Cnt += Mod;  
 
   // display update
@@ -92,6 +100,7 @@ void loop()
   lcd.print(" ");
   
   lcd.setCursor(0,1);
+  lcd.print(millis());
   
 //  int Mod = 0;
 //  if(RotaryCodes & 0x03)
