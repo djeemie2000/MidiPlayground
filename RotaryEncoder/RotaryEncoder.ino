@@ -36,12 +36,14 @@ const int RotaryPin2 = 15;
 
 LiquidCrystal_I2C	lcd(0x27,2,1,0,4,5,6,7); // 0x27 is the I2C bus address for an unmodified backpack
 uint8_t RotaryCodes;
-int Cnt;
+int RotaryValue;
+int Misses;
 
 void setup() 
 {
   RotaryCodes = 0;
-  Cnt = 0;
+  RotaryValue = 0;
+  Misses = 0;
   
   pinMode(ButtonPin, INPUT_PULLUP);
   pinMode(RotaryPin1, INPUT_PULLUP);
@@ -58,59 +60,60 @@ void loop()
   bool ButtonPressed = (LOW==digitalRead(ButtonPin));
   if(ButtonPressed)
   {
-    Cnt = 0;
+    RotaryValue = 0;
   }
     
-  RotaryCodes = RotaryCodes << 2;
-//  if(LOW==digitalRead(RotaryPin1) && LOW==digitalRead(RotaryPin1))
-//  {
-//    RotaryCodes |= 0x01;
-//  }
-//  if(LOW==digitalRead(RotaryPin2) && LOW==digitalRead(RotaryPin2))
-//  {
-//    RotaryCodes |= 0x02;
-//  }
-  RotaryCodes |= ( ENC_PORT & 0x03 );  //add current state. mask is 0x00000011 because using ports 14 and 15 on PORTC bus
+  for(int Repeat = 0; Repeat<20; ++Repeat)
+  {
+    RotaryCodes = RotaryCodes << 2;
+    RotaryCodes |= ( ENC_PORT & 0x03 );  //add current state. mask is 0x00000011 because using ports 14 and 15 on PORTC bus
+    
+    static int tbl[16] =
+    { 0, +1, -1, 0,
+      // position 3 = 00 to 11, can't really do anythin, so 0
+      -1, 0, 0/*-2*/, +1,
+      // position 2 = 01 to 10, assume a bounce, should be 01 -> 00 -> 10
+      +1, 0/*+2*/, 0, -1,
+      // position 1 = 10 to 01, assume a bounce, should be 10 -> 00 -> 01
+      0, -1, +1, 0
+      // position 0 = 11 to 10, can't really do anything
+    };
+    
+    uint8_t TblIndex = RotaryCodes & 0x0F;
+    int Mult = 1;
+  //  uint8_t TblIndex = (RotaryCodes & 0x03) | ((RotaryCodes>>6<<2) & 0x0F);
+    if(TblIndex==3 || TblIndex==6 || TblIndex==9 ||TblIndex==12)
+    {
+      ++Misses;
+      ++Mult;
+      // try using previous?
+      TblIndex = (RotaryCodes>>2) & 0x0F;
+      if(TblIndex==3 || TblIndex==6 || TblIndex==9 ||TblIndex==12)
+      {
+        ++Misses;
+        ++Mult; 
+        TblIndex = (RotaryCodes>>4) & 0x0F;
+      }
+    }
+    int Mod = tbl[TblIndex]*Mult;
+    RotaryValue += Mod;  
+  }
   
-  static int tbl[16] =
-  { 0, +1, -1, 0,
-    // position 3 = 00 to 11, can't really do anythin, so 0
-    -1, 0, -2, +1,
-    // position 2 = 01 to 10, assume a bounce, should be 01 -> 00 -> 10
-    +1, +2, 0, -1,
-    // position 1 = 10 to 01, assume a bounce, should be 10 -> 00 -> 01
-    0, -1, +1, 0
-    // position 0 = 11 to 10, can't really do anything
-  };
-  
-  uint8_t TblIndex = RotaryCodes & 0x0F;
-//  uint8_t TblIndex = (RotaryCodes & 0x03) | ((RotaryCodes>>6<<2) & 0x0F);
-  int Mod = tbl[TblIndex];
-  Cnt += Mod;  
-
   // display update
   lcd.home (); // set cursor to 0,0
   lcd.print("Btn ");  
   lcd.print(ButtonPressed?1:0);
   
-//  ++Cnt;
-  lcd.print("Cnt ");
-  lcd.print(Cnt);
+//  ++RotaryValue;
+  lcd.print(" Val ");
+  lcd.print(RotaryValue);
   lcd.print(" ");
   lcd.print(" ");
   
   lcd.setCursor(0,1);
-  lcd.print(millis());
+  lcd.print(RotaryCodes, HEX);
+  lcd.setCursor(3,1);
+  lcd.print(Misses);
   
-//  int Mod = 0;
-//  if(RotaryCodes & 0x03)
-//  { // not unchanged
-//    lcd.print(RotaryCodes&0x08 ? 1 : 0);
-//    lcd.print(RotaryCodes&0x04 ? 1 : 0);
-//    lcd.print(RotaryCodes&0x02 ? 1 : 0);
-//    lcd.print(RotaryCodes&0x01 ? 1 : 0);
-//  }
-  
-//  delay(1);//????
 }
 
