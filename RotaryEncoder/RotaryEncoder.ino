@@ -63,40 +63,44 @@ void loop()
     RotaryValue = 0;
   }
     
-  for(int Repeat = 0; Repeat<20; ++Repeat)
+//  for(int Repeat = 0; Repeat<20; ++Repeat)
   {
-    RotaryCodes = RotaryCodes << 2;
-    RotaryCodes |= ( ENC_PORT & 0x03 );  //add current state. mask is 0x00000011 because using ports 14 and 15 on PORTC bus
+    uint8_t CurrentRotaryCode = ( ENC_PORT & 0x03 );  //add current state. mask is 0x00000011 because using ports 14 and 15 on PORTC bus
+    if(CurrentRotaryCode!=(RotaryCodes&0x03))
+    {//change!
+      RotaryCodes = RotaryCodes << 2;
+      RotaryCodes |= CurrentRotaryCode;
     
-    static int tbl[16] =
-    { 0, +1, -1, 0,
-      // position 3 = 00 to 11, can't really do anythin, so 0
-      -1, 0, 0/*-2*/, +1,
-      // position 2 = 01 to 10, assume a bounce, should be 01 -> 00 -> 10
-      +1, 0/*+2*/, 0, -1,
-      // position 1 = 10 to 01, assume a bounce, should be 10 -> 00 -> 01
-      0, -1, +1, 0
-      // position 0 = 11 to 10, can't really do anything
-    };
-    
-    uint8_t TblIndex = RotaryCodes & 0x0F;
-    int Mult = 1;
-  //  uint8_t TblIndex = (RotaryCodes & 0x03) | ((RotaryCodes>>6<<2) & 0x0F);
-    if(TblIndex==3 || TblIndex==6 || TblIndex==9 ||TblIndex==12)
-    {
-      ++Misses;
-      ++Mult;
-      // try using previous?
-      TblIndex = (RotaryCodes>>2) & 0x0F;
+      static int tbl[16] =
+      { 0, +1, -1, 0,
+        // position 3 = 00 to 11, can't really do anythin, so 0
+        -1, 0, 0/*-2*/, +1,
+        // position 2 = 01 to 10, assume a bounce, should be 01 -> 00 -> 10
+        +1, 0/*+2*/, 0, -1,
+        // position 1 = 10 to 01, assume a bounce, should be 10 -> 00 -> 01
+        0, -1, +1, 0
+        // position 0 = 11 to 10, can't really do anything
+      };
+      
+      uint8_t TblIndex = RotaryCodes & 0x0F;
+      int Mult = 1;
+    //  uint8_t TblIndex = (RotaryCodes & 0x03) | ((RotaryCodes>>6<<2) & 0x0F);
       if(TblIndex==3 || TblIndex==6 || TblIndex==9 ||TblIndex==12)
       {
         ++Misses;
-        ++Mult; 
-        TblIndex = (RotaryCodes>>4) & 0x0F;
+        ++Mult;
+        // try using previous?
+        TblIndex = (RotaryCodes>>2) & 0x0F;
+        if(TblIndex==3 || TblIndex==6 || TblIndex==9 ||TblIndex==12)
+        {
+          ++Misses;
+          ++Mult; 
+          TblIndex = (RotaryCodes>>4) & 0x0F;
+        }
       }
+      int Mod = tbl[TblIndex]*Mult;
+      RotaryValue += Mod;  
     }
-    int Mod = tbl[TblIndex]*Mult;
-    RotaryValue += Mod;  
   }
   
   // display update
