@@ -60,6 +60,11 @@ public:
 
         return Action;
     }
+    
+    bool GetState() const
+    {
+      return s_State;
+    }
 
 private:
     int s_TempoBpm;

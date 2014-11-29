@@ -30,6 +30,11 @@ public:
         , m_MidiNotePlayer()
         , m_MidiNoteDisplay()
     {}
+    
+    void Begin()
+    {
+      m_MidiNotePlayer.Begin();
+    }
 
     int Update(int RotaryPosition, bool ButtonPressed, unsigned long TimeStampMilliSeconds)
     {
@@ -119,6 +124,11 @@ public:
     int GetCurrentTempoBpm() const
     {
       return m_Period.GetTempoBpm();
+    }
+        
+    bool GetState() const
+    {
+      return m_Period.GetState();
     }
 
 private:

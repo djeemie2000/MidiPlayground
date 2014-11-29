@@ -21,7 +21,6 @@ volatile uint32_t RotaryCode;
 volatile int Position;
 
 COneStepController Controller;
-CMidiSerial MidiSerial;
 
 void setup() 
 {
@@ -45,6 +44,8 @@ void setup()
   lcd.begin (16,2); // for 16 x 2 LCD module
   lcd.setBacklightPin(3,POSITIVE);
   lcd.setBacklight(HIGH);//backlight on
+  
+  Controller.Begin();
 }
 
 void loop() 
@@ -66,7 +67,10 @@ void loop()
   lcd.setCursor(0,0); // set cursor to 0,0
   lcd.print("P ");
   lcd.print(Position);
-  lcd.print("      ");
+  lcd.print("   ");
+  
+  lcd.print(Controller.GetState()?1:0);
+  lcd.print("   ");
   
   lcd.setCursor(0, 1);
   lcd.print(Controller.GetCurrentNote());
