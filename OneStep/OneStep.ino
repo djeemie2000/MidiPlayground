@@ -1,9 +1,8 @@
-
-
 #include <Wire.h>
 #include <LCD.h>
 #include <LiquidCrystal_I2C.h>
 #include "StepController.h"
+#include <MidiSerial.h>
 
 #define ENC_PORT PIND //PIND is the bank where pin 2 and 3 are on
 const int EncoderPinA = 2;
@@ -22,19 +21,13 @@ volatile uint32_t RotaryCode;
 volatile int Position;
 
 COneStepController Controller;
-
-int EditSelection;
-bool PrevButtonPressed;
-
+CMidiSerial MidiSerial;
 
 void setup() 
 {
   RotaryCode = 0x00;
   Position = 0;
-  
-  EditSelection = 1;// 0 octave, 1 Note, 2 Velocity, 3 Duration, 4 Tempo
-  PrevButtonPressed = false;
-  
+   
   pinMode(PressButtonPin, INPUT_PULLUP);
   pinMode(EncoderPinA, INPUT_PULLUP);
   pinMode(EncoderPinB, INPUT_PULLUP);
@@ -57,18 +50,12 @@ void setup()
 void loop() 
 {  
   bool ButtonPressed = (LOW==digitalRead(PressButtonPin));
- 
-  if(ButtonPressed != PrevButtonPressed)
-  {
-    //Position = 0;
-    if(ButtonPressed)
-    {
-      EditSelection = (EditSelection+1)%5;//toggle edit selection
-    }
-  }
-  PrevButtonPressed = ButtonPressed;
   
+  unsigned long TimeStamp = millis();
+  Controller.Update(Position, ButtonPressed, TimeStamp);
+   
   // update leds
+  int EditSelection = Controller.GetEditMode();
   digitalWrite(OctaveLedPin, EditSelection==0 ? HIGH : LOW);
   digitalWrite(NoteLedPin, EditSelection==1 ? HIGH : LOW);
   digitalWrite(VelocityLedPin, EditSelection==2 ? HIGH : LOW);
@@ -80,6 +67,17 @@ void loop()
   lcd.print("P ");
   lcd.print(Position);
   lcd.print("      ");
+  
+  lcd.setCursor(0, 1);
+  lcd.print(Controller.GetCurrentNote());
+  lcd.print(Controller.GetCurrentOctave());
+  lcd.print(" V");
+  lcd.print(Controller.GetCurrentVelocity(), DEC);
+  lcd.print(" D");
+  lcd.print(Controller.GetCurrentDuration(), DEC);
+  // tempo
+  lcd.print(" ");
+  lcd.print(Controller.GetCurrentTempoBpm(), DEC);
 }
 
 void OnInterupt()

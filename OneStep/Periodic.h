@@ -25,6 +25,11 @@ public:
     {
         s_TempoBpm += Change;
     }
+    
+    int GetTempoBpm() const
+    {
+      return s_TempoBpm;
+    }
 
     int Update(unsigned long TimeStampMilliSeconds, int Duration)
     {

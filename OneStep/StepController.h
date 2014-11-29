@@ -6,6 +6,8 @@
 #include "MidiNotePlayer.h"
 #include "MidiNoteDisplay.h"
 
+#include <MidiSerial.h>
+
 class COneStepController
 {
 public:
@@ -112,6 +114,11 @@ public:
     int GetCurrentDuration() const
     {
         return m_Step.s_Duration;
+    }
+    
+    int GetCurrentTempoBpm() const
+    {
+      return m_Period.GetTempoBpm();
     }
 
 private:
