@@ -8,7 +8,7 @@
 const int EncoderPinA = 2;
 const int EncoderPinB = 3;
 const int InteruptPin = EncoderPinA;
-const int PressButtonPin = 5;
+const int PressButtonPin = 4;
 
 const int OctaveLedPin = 8;
 const int NoteLedPin = 9;
@@ -53,7 +53,7 @@ void loop()
   bool ButtonPressed = (LOW==digitalRead(PressButtonPin));
   
   unsigned long TimeStamp = millis();
-  Controller.Update(Position, ButtonPressed, TimeStamp);
+  int Action = Controller.Update(Position, ButtonPressed, TimeStamp);
    
   // update leds
   int EditSelection = Controller.GetEditMode();
@@ -61,7 +61,16 @@ void loop()
   digitalWrite(NoteLedPin, EditSelection==1 ? HIGH : LOW);
   digitalWrite(VelocityLedPin, EditSelection==2 ? HIGH : LOW);
   digitalWrite(DurationLedPin, EditSelection==3 ? HIGH : LOW);
-  digitalWrite(TempoLedPin, EditSelection==4 ? HIGH : LOW);
+  // digitalWrite(TempoLedPin, EditSelection==4 ? HIGH : LOW);
+ 
+  if(Action==1)
+  { // note on
+    digitalWrite(TempoLedPin, HIGH);
+  }
+  else if(Action == -1)
+  { // note off
+    digitalWrite(TempoLedPin, LOW);
+  }
 
   // display update
   lcd.setCursor(0,0); // set cursor to 0,0

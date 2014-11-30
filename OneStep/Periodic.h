@@ -1,7 +1,7 @@
 #ifndef PERIODIC_H
 #define PERIODIC_H
 
-int BpmToMilliSeconds(int Bpm)
+unsigned long BpmToMilliSeconds(int Bpm)
 {
     // carefull : make sure calculation is in long and not in int!
     return 60L * 1000L / Bpm;
@@ -49,8 +49,8 @@ public:
         else
         {
             // currently on => check for note off
-            int DurationMilliSeconds = Duration * BpmToMilliSeconds(s_TempoBpm) / 128;//maxDuration = 127 !!
-            unsigned long NoteOffTimeStamp = s_StartTimeStampMilliSeconds+ DurationMilliSeconds;
+            unsigned long DurationMilliSeconds = Duration * BpmToMilliSeconds(s_TempoBpm) / 128;//maxDuration = 127 !!
+            unsigned long NoteOffTimeStamp = s_StartTimeStampMilliSeconds + DurationMilliSeconds;
             if(NoteOffTimeStamp<TimeStampMilliSeconds)
             {
                 Action = NoteOffAction;
