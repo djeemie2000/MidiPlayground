@@ -9,7 +9,9 @@
 const int EncoderPinA = 2;
 const int EncoderPinB = 3;
 const int InteruptPin = EncoderPinA;
-const int PressButtonPin = 4;
+const int EditModeButtonPin = 4;
+
+const int SelectStepButtonPin = 5;
 
 const int OctaveLedPin = 8;
 const int NoteLedPin = 9;
@@ -27,9 +29,11 @@ void setup()
   RotaryCode = 0x00;
   Position = 0;
    
-  pinMode(PressButtonPin, INPUT_PULLUP);
+  pinMode(EditModeButtonPin, INPUT_PULLUP);
   pinMode(EncoderPinA, INPUT_PULLUP);
   pinMode(EncoderPinB, INPUT_PULLUP);
+
+  pinMode(SelectStepButtonPin, INPUT_PULLUP);
   
   pinMode(OctaveLedPin, OUTPUT);
   pinMode(NoteLedPin, OUTPUT);
@@ -45,10 +49,10 @@ void setup()
 
 void loop() 
 {  
-  bool ButtonPressed = (LOW==digitalRead(PressButtonPin));
-  
+  bool EditModeButtonPressed = (LOW==digitalRead(EditModeButtonPin));
+  bool SelectStepButtonPressed = (LOW==digitalRead(SelectStepButtonPin));  
   unsigned long TimeStamp = millis();
-  int Action = Controller.Update(Position, ButtonPressed, TimeStamp);
+  int Action = Controller.Update(Position, EditModeButtonPressed, SelectStepButtonPressed, TimeStamp);
    
   // update leds
   int EditSelection = Controller.GetEditMode();

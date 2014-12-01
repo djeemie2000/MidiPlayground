@@ -24,8 +24,9 @@ public:
     };
 
     COneStepController()
-        : m_ButtonPressed(false)
+        : m_EditModeButtonPressed(false)
         , m_RotaryPosition(0)//?? initial value??
+        , m_SelectStepButtonPressed(false)
         , m_EditMode(Note)
         , m_Period()
         , m_PlayStep(0)
@@ -46,16 +47,28 @@ public:
       }
     }
 
-    int Update(int RotaryPosition, bool ButtonPressed, unsigned long TimeStampMilliSeconds)
+    int Update(int RotaryPosition, bool EditModeButtonPressed, bool SelectStepButtonPressed, unsigned long TimeStampMilliSeconds)
     {
         // button off -> on => toggle edit mode (octave, note, velocity, Duration, Tempo)
-        if(m_ButtonPressed != ButtonPressed)
+        if(m_EditModeButtonPressed != EditModeButtonPressed)
         {
-            if(ButtonPressed)
+            if(EditModeButtonPressed)
             {
                 m_EditMode = static_cast<EEditMode>( (m_EditMode+1)%EditModeSize );
             }
-            m_ButtonPressed = ButtonPressed;
+            m_EditModeButtonPressed = EditModeButtonPressed;
+        }
+        
+        if(m_SelectStepButtonPressed!=SelectStepButtonPressed)
+        {
+          if(SelectStepButtonPressed)
+          {
+            m_EditStep = (m_EditStep+1)%NumSteps;
+          }
+          m_SelectStepButtonPressed = SelectStepButtonPressed;
+                      
+          // update display
+          m_MidiNoteDisplay.Update(m_EditStep, m_Step[m_EditStep].s_MidiNote, m_Step[m_EditStep].s_Velocity, m_Step[m_EditStep].s_Duration);
         }
 
         // RotaryPosition changed => apply change to current edit mode
@@ -118,8 +131,9 @@ public:
     }
 
 private:
-    bool m_ButtonPressed;
+    bool m_EditModeButtonPressed;
     int m_RotaryPosition;
+    bool m_SelectStepButtonPressed;
 
     EEditMode m_EditMode;
 
