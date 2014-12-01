@@ -44,8 +44,16 @@ void CMidiNoteDisplay::Begin()
   m_lcd.begin (16,2); // for 16 x 2 LCD module
   m_lcd.setBacklightPin(3,POSITIVE);
   m_lcd.setBacklight(HIGH);//backlight on
-  m_lcd.cursor();
-  //m_lcd.blink();
+  m_lcd.cursor();// show cursor
+  m_lcd.noBlink();// no blinking curso
+  
+  uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+  m_lcd.createChar(0, CustomCharacter);
+  for(int Bar = 1; Bar<8; ++Bar)
+  {
+    CustomCharacter[8-Bar] = 0x1F;//5 msb bits
+    m_lcd.createChar(Bar, CustomCharacter);
+  }
 }
 
 void CMidiNoteDisplay::Update(uint8_t MidiNote, uint8_t Velocity, uint8_t Duration)
@@ -56,13 +64,12 @@ void CMidiNoteDisplay::Update(uint8_t MidiNote, uint8_t Velocity, uint8_t Durati
   m_lcd.print(MidiNoteToOctave(MidiNote));
       
   m_lcd.setCursor(0, 1);
-  m_lcd.print("V");
-  m_lcd.print(Velocity, DEC);
-  m_lcd.print(" D");
-  m_lcd.print(Duration, DEC);
+  uint8_t VelocityRescaled = Velocity/16;
+  m_lcd.write(VelocityRescaled);
+  uint8_t DurationRescaled = Duration/16;
+  m_lcd.write(DurationRescaled);
   
-  m_lcd.setCursor(1,0); // set cursor to 0,0
-  
+  m_lcd.setCursor(1,0); // set cursor underneath octave  
 }
 
 #endif // MIDINOTEDISPLAY_H
