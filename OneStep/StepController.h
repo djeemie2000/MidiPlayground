@@ -12,6 +12,7 @@ class COneStepController
 {
 public:
     static const int NumSteps = 8;
+    static const int EditAll = NumSteps;
 
     enum EEditMode
     {
@@ -63,31 +64,47 @@ public:
         {
           if(SelectStepButtonPressed)
           {
-            m_EditStep = (m_EditStep+1)%NumSteps;
+            // toggle in interval [0, NumSteps[ use NumSteps as 'EditAll'
+            m_EditStep = (m_EditStep+1)%(1+NumSteps);
           }
           m_SelectStepButtonPressed = SelectStepButtonPressed;
                       
-          // update display
-          m_MidiNoteDisplay.Update(m_EditStep, m_Step[m_EditStep].s_MidiNote, m_Step[m_EditStep].s_Velocity, m_Step[m_EditStep].s_Duration);
+          // update display => edit step
+          m_MidiNoteDisplay.UpdateEditStep(m_EditStep);
         }
 
         // RotaryPosition changed => apply change to current edit mode
         if(m_RotaryPosition != RotaryPosition)
         {
+            int MinEditStep = (m_EditStep == EditAll) ? 0 : m_EditStep; 
+            int MaxEditStep = (m_EditStep == EditAll) ? NumSteps-1 : m_EditStep;
+            
             int RotaryPositionChange = RotaryPosition - m_RotaryPosition;
             switch(m_EditMode)
             {
             case Octave:
-                m_Step[m_EditStep].UpdateOctave(RotaryPositionChange);
+                for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+                {
+                  m_Step[EditStep].UpdateOctave(RotaryPositionChange);
+                }
                 break;
             case Note:
-                m_Step[m_EditStep].UpdateNote(RotaryPositionChange);
+                for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+                {
+                  m_Step[EditStep].UpdateNote(RotaryPositionChange);
+                }
                 break;
             case Velocity:
-                m_Step[m_EditStep].UpdateVelocity(RotaryPositionChange);
+                for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+                {
+                  m_Step[EditStep].UpdateVelocity(RotaryPositionChange);
+                }
                 break;
             case Duration:
-                m_Step[m_EditStep].UpdateDuration(RotaryPositionChange);
+                for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+                {
+                  m_Step[EditStep].UpdateDuration(RotaryPositionChange);
+                }
                 break;
             case Tempo:
                 m_Period.UpdateTempo(RotaryPositionChange);
@@ -100,7 +117,10 @@ public:
             m_RotaryPosition = RotaryPosition;
 
             // update display
-            m_MidiNoteDisplay.Update(m_EditStep, m_Step[m_EditStep].s_MidiNote, m_Step[m_EditStep].s_Velocity, m_Step[m_EditStep].s_Duration);
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {                  
+              m_MidiNoteDisplay.Update(EditStep, m_Step[EditStep].s_MidiNote, m_Step[EditStep].s_Velocity, m_Step[EditStep].s_Duration);
+            }
         }
 
         // timestamp => note on / note off required?

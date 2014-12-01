@@ -29,12 +29,15 @@ public:
     CMidiNoteDisplay();
     void Begin();
     void Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration);
+    void UpdateEditStep(int Step);
 private:
     LiquidCrystal_I2C	m_lcd; 
+    int m_EditStep;
 };
  
 CMidiNoteDisplay::CMidiNoteDisplay()
 : m_lcd(0x27,2,1,0,4,5,6,7) // 0x27 is the I2C bus address for an unmodified backpack
+, m_EditStep(0)
 {
 }
 
@@ -45,7 +48,8 @@ void CMidiNoteDisplay::Begin()
   m_lcd.setBacklightPin(3,POSITIVE);
   m_lcd.setBacklight(HIGH);//backlight on
   m_lcd.cursor();// show cursor
-  m_lcd.noBlink();// no blinking curso
+  m_lcd.noBlink();// no blinking cursor
+  UpdateEditStep(m_EditStep);
   
   uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   m_lcd.createChar(0, CustomCharacter);
@@ -72,8 +76,30 @@ void CMidiNoteDisplay::Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint
     uint8_t DurationRescaled = Duration/16;
     m_lcd.write(DurationRescaled);
     
-    m_lcd.setCursor(x+1,0); // set cursor underneath octave 
+    // set cursor underneath edited step octave
+    UpdateEditStep(m_EditStep);
   } 
 }
 
+void CMidiNoteDisplay::UpdateEditStep(int Step)
+{
+    if(0<=Step && Step<8)
+    {
+      if(m_EditStep==8)
+      {
+        m_lcd.cursor();
+      }
+      m_EditStep = Step;
+      // set cursor underneath edited step octave
+      m_lcd.setCursor(m_EditStep*2+1, 0); 
+    }
+    else if(Step==8)
+    {
+      m_EditStep = Step;
+      // edit all / none
+      m_lcd.noCursor();
+    }
+}
+
 #endif // MIDINOTEDISPLAY_H
+
