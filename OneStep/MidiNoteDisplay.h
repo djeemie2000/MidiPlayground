@@ -28,7 +28,7 @@ class CMidiNoteDisplay
 public:
     CMidiNoteDisplay();
     void Begin();
-    void Update(uint8_t MidiNote, uint8_t Velocity, uint8_t Duration);
+    void Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration);
 private:
     LiquidCrystal_I2C	m_lcd; 
 };
@@ -56,20 +56,24 @@ void CMidiNoteDisplay::Begin()
   }
 }
 
-void CMidiNoteDisplay::Update(uint8_t MidiNote, uint8_t Velocity, uint8_t Duration)
+void CMidiNoteDisplay::Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration)
 {
-  // display update
-  m_lcd.setCursor(0,0); // set cursor to 0,0
-  m_lcd.print(MidiNoteToNote(MidiNote));
-  m_lcd.print(MidiNoteToOctave(MidiNote));
-      
-  m_lcd.setCursor(0, 1);
-  uint8_t VelocityRescaled = Velocity/16;
-  m_lcd.write(VelocityRescaled);
-  uint8_t DurationRescaled = Duration/16;
-  m_lcd.write(DurationRescaled);
-  
-  m_lcd.setCursor(1,0); // set cursor underneath octave  
+  if(0<=Step && Step<8)
+  {
+    int x = 2*Step;
+    // display update
+    m_lcd.setCursor(x,0); // set cursor to 0,0
+    m_lcd.print(MidiNoteToNote(MidiNote));
+    m_lcd.print(MidiNoteToOctave(MidiNote));
+        
+    m_lcd.setCursor(x, 1);
+    uint8_t VelocityRescaled = Velocity/16;
+    m_lcd.write(VelocityRescaled);
+    uint8_t DurationRescaled = Duration/16;
+    m_lcd.write(DurationRescaled);
+    
+    m_lcd.setCursor(x+1,0); // set cursor underneath octave 
+  } 
 }
 
 #endif // MIDINOTEDISPLAY_H

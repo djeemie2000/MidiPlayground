@@ -11,6 +11,8 @@
 class COneStepController
 {
 public:
+    static const int NumSteps = 8;
+
     enum EEditMode
     {
         Octave = 0,
@@ -26,6 +28,8 @@ public:
         , m_RotaryPosition(0)//?? initial value??
         , m_EditMode(Note)
         , m_Period()
+        , m_PlayStep(0)
+        , m_EditStep(0)
         , m_Step()
         , m_MidiNotePlayer()
         , m_MidiNoteDisplay()
@@ -36,7 +40,10 @@ public:
       m_MidiNotePlayer.Begin();
       m_MidiNoteDisplay.Begin();
       // display initial values:
-      m_MidiNoteDisplay.Update(m_Step.s_MidiNote, m_Step.s_Velocity, m_Step.s_Duration);
+      for(int DisplayStep = 0; DisplayStep<NumSteps; ++DisplayStep)
+      {
+        m_MidiNoteDisplay.Update(DisplayStep, m_Step[DisplayStep].s_MidiNote, m_Step[DisplayStep].s_Velocity, m_Step[DisplayStep].s_Duration);
+      }
     }
 
     int Update(int RotaryPosition, bool ButtonPressed, unsigned long TimeStampMilliSeconds)
@@ -58,20 +65,19 @@ public:
             switch(m_EditMode)
             {
             case Octave:
-                m_Step.UpdateOctave(RotaryPositionChange);
+                m_Step[m_EditStep].UpdateOctave(RotaryPositionChange);
                 break;
             case Note:
-                m_Step.UpdateNote(RotaryPositionChange);
+                m_Step[m_EditStep].UpdateNote(RotaryPositionChange);
                 break;
             case Velocity:
-                m_Step.UpdateVelocity(RotaryPositionChange);
+                m_Step[m_EditStep].UpdateVelocity(RotaryPositionChange);
                 break;
             case Duration:
-                m_Step.UpdateDuration(RotaryPositionChange);
+                m_Step[m_EditStep].UpdateDuration(RotaryPositionChange);
                 break;
             case Tempo:
                 m_Period.UpdateTempo(RotaryPositionChange);
-                // => adjust period msec, durationperiod msec
                 break;
             case EditModeSize:
             default:
@@ -81,15 +87,18 @@ public:
             m_RotaryPosition = RotaryPosition;
 
             // update display
-            m_MidiNoteDisplay.Update(m_Step.s_MidiNote, m_Step.s_Velocity, m_Step.s_Duration);
+            m_MidiNoteDisplay.Update(m_EditStep, m_Step[m_EditStep].s_MidiNote, m_Step[m_EditStep].s_Velocity, m_Step[m_EditStep].s_Duration);
         }
 
         // timestamp => note on / note off required?
-        int Action = m_Period.Update(TimeStampMilliSeconds, m_Step.s_Duration);
+        int Action = m_Period.Update(TimeStampMilliSeconds, m_Step[m_PlayStep].s_Duration);
         // action => on / off / do nothing
         if(Action == CPeriodic::NoteOnAction)
         {
-            m_MidiNotePlayer.NoteOn(m_Step.s_MidiNote, m_Step.s_Velocity);
+            // goto next step
+            m_PlayStep = (m_PlayStep+1)%NumSteps;
+            // 
+            m_MidiNotePlayer.NoteOn(m_Step[m_PlayStep].s_MidiNote, m_Step[m_PlayStep].s_Velocity);
         }
         else if(Action == CPeriodic::NoteOffAction)
         {
@@ -101,32 +110,6 @@ public:
     EEditMode GetEditMode() const
     {
         return m_EditMode;
-    }
-
-    // TODO getters for display: oct, not, vel, dur -> char
-    char GetCurrentNote() const
-    {
-        return MidiNoteToNote(m_Step.s_MidiNote);
-    }
-
-    int GetCurrentOctave() const
-    {
-        return MidiNoteToOctave(m_Step.s_MidiNote);
-    }
-
-    int GetCurrentVelocity() const
-    {
-        return m_Step.s_Velocity;
-    }
-
-    int GetCurrentDuration() const
-    {
-        return m_Step.s_Duration;
-    }
-    
-    int GetCurrentTempoBpm() const
-    {
-      return m_Period.GetTempoBpm();
     }
         
     bool GetState() const
@@ -141,7 +124,10 @@ private:
     EEditMode m_EditMode;
 
     CPeriodic m_Period;
-    SStep m_Step;
+    
+    int m_PlayStep;
+    int m_EditStep;
+    SStep m_Step[NumSteps];
     CMidiNotePlayer m_MidiNotePlayer;
     CMidiNoteDisplay m_MidiNoteDisplay;
 };
