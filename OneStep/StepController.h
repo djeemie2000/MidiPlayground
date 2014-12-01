@@ -34,6 +34,9 @@ public:
     void Begin()
     {
       m_MidiNotePlayer.Begin();
+      m_MidiNoteDisplay.Begin();
+      // display initial values:
+      m_MidiNoteDisplay.Update(m_Step.s_MidiNote, m_Step.s_Velocity, m_Step.s_Duration);
     }
 
     int Update(int RotaryPosition, bool ButtonPressed, unsigned long TimeStampMilliSeconds)

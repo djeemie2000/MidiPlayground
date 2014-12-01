@@ -35,14 +35,13 @@ void CMidiNotePlayer::NoteOn(uint8_t MidiNote, uint8_t Velocity)
 {
     m_MidiNote = MidiNote;
     m_Velocity = Velocity;
-    // TODO
+
     m_MidiSerial.NoteOn(1, MidiNote, Velocity);
 }
 
 void CMidiNotePlayer::NoteOff()
 {
     // use m_MidiNote, m_Velocity
-    // TODO
     m_MidiSerial.NoteOff(1, m_MidiNote, m_Velocity);
 }
 

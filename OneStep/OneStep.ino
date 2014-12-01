@@ -1,3 +1,4 @@
+//Note: apparently, need to include here all library related stuff that is used in other files of the project
 #include <Wire.h>
 #include <LCD.h>
 #include <LiquidCrystal_I2C.h>
@@ -16,7 +17,7 @@ const int VelocityLedPin = 10;
 const int DurationLedPin = 11;
 const int TempoLedPin = 12;
 
-LiquidCrystal_I2C	lcd(0x27,2,1,0,4,5,6,7); // 0x27 is the I2C bus address for an unmodified backpack
+//LiquidCrystal_I2C	lcd(0x27,2,1,0,4,5,6,7); // 0x27 is the I2C bus address for an unmodified backpack
 volatile uint32_t RotaryCode;
 volatile int Position;
 
@@ -41,9 +42,12 @@ void setup()
   attachInterrupt(0, OnInterupt, CHANGE);
   
   // activate LCD module
-  lcd.begin (16,2); // for 16 x 2 LCD module
-  lcd.setBacklightPin(3,POSITIVE);
-  lcd.setBacklight(HIGH);//backlight on
+//  lcd.begin (16,2); // for 16 x 2 LCD module
+//  lcd.setBacklightPin(3,POSITIVE);
+//  lcd.setBacklight(HIGH);//backlight on
+//  lcd.cursor();
+//  lcd.blink();
+ 
   
   Controller.Begin();
 }
@@ -73,24 +77,22 @@ void loop()
   }
 
   // display update
-  lcd.setCursor(0,0); // set cursor to 0,0
-  lcd.print("P ");
-  lcd.print(Position);
-  lcd.print("   ");
+  //lcd.setCursor(0,0); // set cursor to 0,0
+  //lcd.print(Controller.GetCurrentNote());
+  //lcd.print(Controller.GetCurrentOctave());
   
-  lcd.print(Controller.GetState()?1:0);
-  lcd.print("   ");
-  
-  lcd.setCursor(0, 1);
-  lcd.print(Controller.GetCurrentNote());
-  lcd.print(Controller.GetCurrentOctave());
-  lcd.print(" V");
-  lcd.print(Controller.GetCurrentVelocity(), DEC);
-  lcd.print(" D");
-  lcd.print(Controller.GetCurrentDuration(), DEC);
+  //lcd.print("P ");
+  //lcd.print(Position);
+  //lcd.print("   ");
+    
+  //lcd.setCursor(0, 1);
+  //lcd.print("V");
+  //lcd.print(Controller.GetCurrentVelocity(), DEC);
+  //lcd.print(" D");
+  //lcd.print(Controller.GetCurrentDuration(), DEC);
   // tempo
-  lcd.print(" ");
-  lcd.print(Controller.GetCurrentTempoBpm(), DEC);
+  //lcd.print(" ");
+  //lcd.print(Controller.GetCurrentTempoBpm(), DEC);
 }
 
 void OnInterupt()

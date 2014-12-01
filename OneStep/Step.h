@@ -1,6 +1,7 @@
 #ifndef STEP_H
 #define STEP_H
 
+#include <arduino.h>
 //#include <cstdint>
 
 //using std::min;
@@ -33,6 +34,7 @@ struct SStep
 
     void UpdateOctave(int Change)
     {
+        // TODO do not change note when cropping
         const int NumMidiNotesPerOctave = 12;
         s_MidiNote = static_cast<uint8_t>(Crop(s_MidiNote + Change * NumMidiNotesPerOctave, MinMidiNote, MaxMidiNote));
     }
