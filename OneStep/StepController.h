@@ -108,7 +108,10 @@ public:
                 }
                 break;
             case Active:
-                // ....TODO
+                for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+                {
+                  m_Step[EditStep].UpdateActive(RotaryPositionChange);
+                }
                 break;
             case Tempo:
                 m_Period.UpdateTempo(RotaryPositionChange);

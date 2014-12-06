@@ -47,8 +47,8 @@ void CMidiNoteDisplay::Begin()
   m_lcd.begin (16,2); // for 16 x 2 LCD module
   m_lcd.setBacklightPin(3,POSITIVE);
   m_lcd.setBacklight(HIGH);//backlight on
-  m_lcd.cursor();// show cursor
-  m_lcd.noBlink();// no blinking cursor
+  m_lcd.noCursor();// show cursor
+  m_lcd.blink();//noBlink();// no blinking cursor
   UpdateEditStep(m_EditStep);
   
   uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -97,7 +97,7 @@ void CMidiNoteDisplay::UpdateEditStep(int Step)
     {
       m_EditStep = Step;
       // edit all / none
-      m_lcd.noCursor();
+      m_lcd.noBlink();
     }
 }
 

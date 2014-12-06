@@ -21,15 +21,16 @@ struct SStep
     static const int MinDuration = 1;
     static const int MaxDuration = 127;
 
-
     uint8_t s_MidiNote;
     uint8_t s_Velocity;
     uint8_t s_Duration;
+    bool    s_Active;
 
     SStep()
      : s_MidiNote(0x40)//64
      , s_Velocity(MaxVelocity)
      , s_Duration(0x40)//64
+     , s_Active(true)
     {}
 
     void UpdateOctave(int Change)
@@ -52,6 +53,21 @@ struct SStep
     void UpdateDuration(int Change)
     {
         s_Duration = static_cast<uint8_t>(Crop(s_Duration + Change, MinDuration, MaxDuration));
+    }
+    
+    void UpdateActive(int Change)
+    {
+      // zero => unchanged
+      // positive => on
+      // negative => off
+      if(0<Change)
+      {  
+        s_Active = true;
+      }
+      else if(Change<0)
+      {
+        s_Active = false;
+      }
     }
 };
 

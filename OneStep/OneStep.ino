@@ -20,6 +20,8 @@ const int DurationLedPin = 11;
 const int ActiveLedPin = 6;
 const int TempoLedPin = 12;
 
+const int TempoPotPin = A0;
+
 volatile uint32_t RotaryCode;
 volatile int Position;
 
@@ -35,6 +37,8 @@ void setup()
   pinMode(EncoderPinB, INPUT_PULLUP);
 
   pinMode(SelectStepButtonPin, INPUT_PULLUP);
+  
+  pinMode(TempoPotPin, INPUT);
   
   pinMode(OctaveLedPin, OUTPUT);
   pinMode(NoteLedPin, OUTPUT);
@@ -53,6 +57,7 @@ void loop()
 {  
   bool EditModeButtonPressed = (LOW==digitalRead(EditModeButtonPin));
   bool SelectStepButtonPressed = (LOW==digitalRead(SelectStepButtonPin));  
+  int TempoPotValue = analogRead(TempoPotPin);
   unsigned long TimeStamp = millis();
   int Action = Controller.Update(Position, EditModeButtonPressed, SelectStepButtonPressed, TimeStamp);
    
