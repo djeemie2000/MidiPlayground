@@ -17,6 +17,7 @@ const int OctaveLedPin = 8;
 const int NoteLedPin = 9;
 const int VelocityLedPin = 10;
 const int DurationLedPin = 11;
+const int ActiveLedPin = 6;
 const int TempoLedPin = 12;
 
 volatile uint32_t RotaryCode;
@@ -39,6 +40,7 @@ void setup()
   pinMode(NoteLedPin, OUTPUT);
   pinMode(VelocityLedPin, OUTPUT);
   pinMode(DurationLedPin, OUTPUT);
+  pinMode(ActiveLedPin, OUTPUT);
   pinMode(TempoLedPin, OUTPUT);
   
   //interupt handling for int.0 = pin2
@@ -60,7 +62,7 @@ void loop()
   digitalWrite(NoteLedPin, EditSelection==1 ? HIGH : LOW);
   digitalWrite(VelocityLedPin, EditSelection==2 ? HIGH : LOW);
   digitalWrite(DurationLedPin, EditSelection==3 ? HIGH : LOW);
-  // digitalWrite(TempoLedPin, EditSelection==4 ? HIGH : LOW);
+  digitalWrite(ActiveLedPin, EditSelection==4 ? HIGH : LOW);
  
   if(Action==1)
   { // note on

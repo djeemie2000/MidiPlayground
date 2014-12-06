@@ -20,6 +20,7 @@ public:
         Note,
         Velocity,
         Duration,
+        Active,
         Tempo,
         EditModeSize
     };
@@ -105,6 +106,9 @@ public:
                 {
                   m_Step[EditStep].UpdateDuration(RotaryPositionChange);
                 }
+                break;
+            case Active:
+                // ....TODO
                 break;
             case Tempo:
                 m_Period.UpdateTempo(RotaryPositionChange);
