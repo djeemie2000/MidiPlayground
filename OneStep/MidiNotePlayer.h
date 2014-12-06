@@ -11,6 +11,7 @@ public:
      : m_MidiChannel(1)
      , m_MidiNote(0x64)
      , m_Velocity(0x7F)
+     , m_NoteOn(false)
      , m_MidiSerial()
     {
     }
@@ -24,6 +25,7 @@ private:
     uint8_t m_MidiChannel;
     uint8_t m_MidiNote;
     uint8_t m_Velocity;
+    bool m_NoteOn;
     
     CMidiSerial m_MidiSerial;
 };
@@ -37,6 +39,8 @@ void CMidiNotePlayer::NoteOn(uint8_t MidiNote, uint8_t Velocity)
 {
     m_MidiNote = MidiNote;
     m_Velocity = Velocity;
+    m_NoteOn = true;
+    // ?? check if !m_NoteOn ?
 
     m_MidiSerial.NoteOn(m_MidiChannel, MidiNote, Velocity);
 }
@@ -44,7 +48,11 @@ void CMidiNotePlayer::NoteOn(uint8_t MidiNote, uint8_t Velocity)
 void CMidiNotePlayer::NoteOff()
 {
     // use m_MidiNote, m_Velocity
-    m_MidiSerial.NoteOff(m_MidiChannel, m_MidiNote, m_Velocity);
+    if(m_NoteOn)
+    {
+      m_MidiSerial.NoteOff(m_MidiChannel, m_MidiNote, m_Velocity);
+      m_NoteOn = false;
+    }
 }
 
 #endif // MIDINOTEPLAYER_H

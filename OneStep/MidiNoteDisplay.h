@@ -28,7 +28,7 @@ class CMidiNoteDisplay
 public:
     CMidiNoteDisplay();
     void Begin();
-    void Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration);
+    void Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration, bool Active);
     void UpdateEditStep(int Step);
 private:
     LiquidCrystal_I2C	m_lcd; 
@@ -51,16 +51,16 @@ void CMidiNoteDisplay::Begin()
   m_lcd.blink();//noBlink();// no blinking cursor
   UpdateEditStep(m_EditStep);
   
-  uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+  uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F };
   m_lcd.createChar(0, CustomCharacter);
   for(int Bar = 1; Bar<8; ++Bar)
   {
-    CustomCharacter[8-Bar] = 0x1F;//5 msb bits
+    CustomCharacter[7-Bar] = 0x1F;//5 msb bits
     m_lcd.createChar(Bar, CustomCharacter);
   }
 }
 
-void CMidiNoteDisplay::Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration)
+void CMidiNoteDisplay::Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint8_t Duration, bool Active)
 {
   if(0<=Step && Step<8)
   {
@@ -71,11 +71,17 @@ void CMidiNoteDisplay::Update(int Step, uint8_t MidiNote, uint8_t Velocity, uint
     m_lcd.print(MidiNoteToOctave(MidiNote));
         
     m_lcd.setCursor(x, 1);
-    uint8_t VelocityRescaled = Velocity/16;
-    m_lcd.write(VelocityRescaled);
-    uint8_t DurationRescaled = Duration/16;
-    m_lcd.write(DurationRescaled);
-    
+    if(Active)
+    {
+      uint8_t VelocityRescaled = Velocity/16;
+      m_lcd.write(VelocityRescaled);
+      uint8_t DurationRescaled = Duration/16;
+      m_lcd.write(DurationRescaled);
+    }
+    else
+    {
+      m_lcd.print("  ");
+    }
     // set cursor underneath edited step octave
     UpdateEditStep(m_EditStep);
   } 
@@ -87,7 +93,7 @@ void CMidiNoteDisplay::UpdateEditStep(int Step)
     {
       if(m_EditStep==8)
       {
-        m_lcd.cursor();
+        m_lcd.blink();
       }
       m_EditStep = Step;
       // set cursor underneath edited step octave

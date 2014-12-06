@@ -45,7 +45,7 @@ public:
       // display initial values:
       for(int DisplayStep = 0; DisplayStep<NumSteps; ++DisplayStep)
       {
-        m_MidiNoteDisplay.Update(DisplayStep, m_Step[DisplayStep].s_MidiNote, m_Step[DisplayStep].s_Velocity, m_Step[DisplayStep].s_Duration);
+        m_MidiNoteDisplay.Update(DisplayStep, m_Step[DisplayStep].s_MidiNote, m_Step[DisplayStep].s_Velocity, m_Step[DisplayStep].s_Duration, m_Step[DisplayStep].s_Active);
       }
     }
 
@@ -126,7 +126,7 @@ public:
             // update display
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {                  
-              m_MidiNoteDisplay.Update(EditStep, m_Step[EditStep].s_MidiNote, m_Step[EditStep].s_Velocity, m_Step[EditStep].s_Duration);
+              m_MidiNoteDisplay.Update(EditStep, m_Step[EditStep].s_MidiNote, m_Step[EditStep].s_Velocity, m_Step[EditStep].s_Duration, m_Step[EditStep].s_Active);
             }
         }
 
@@ -138,7 +138,10 @@ public:
             // goto next step
             m_PlayStep = (m_PlayStep+1)%NumSteps;
             // 
-            m_MidiNotePlayer.NoteOn(m_Step[m_PlayStep].s_MidiNote, m_Step[m_PlayStep].s_Velocity);
+            if(m_Step[m_PlayStep].s_Active)
+            {
+              m_MidiNotePlayer.NoteOn(m_Step[m_PlayStep].s_MidiNote, m_Step[m_PlayStep].s_Velocity);
+            }
         }
         else if(Action == CPeriodic::NoteOffAction)
         {
