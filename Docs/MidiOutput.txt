@@ -1,0 +1,6 @@
+
+* connect red wire to Arduino Tx
+* connect ground wire to Arduino Gnd
+* connect yellow wire to 220 Ohm (red red brown) to +5V
+
+
