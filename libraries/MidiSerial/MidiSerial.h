@@ -1,7 +1,7 @@
-#ifndef MIDISERIAL
-#define MIDISERIAL
+#ifndef MIDISERIAL_H
+#define MIDISERIAL_H
 
-#include "arduino.h"
+#include <Arduino.h>
 
 class CMidiSerial
 {
@@ -36,4 +36,4 @@ public:
   //TODO pitchbend
 };
 
-#endif //MIDISERIAL
+#endif //MIDISERIAL_H

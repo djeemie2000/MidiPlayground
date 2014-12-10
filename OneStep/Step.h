@@ -1,7 +1,7 @@
 #ifndef STEP_H
 #define STEP_H
 
-#include <arduino.h>
+#include <Arduino.h>
 //#include <cstdint>
 
 //using std::min;
