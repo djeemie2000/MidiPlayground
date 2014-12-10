@@ -4,7 +4,7 @@
 #define MIDINOTEDISPLAY_H
 
 //#include <cstdint>
-#include <arduino.h>
+#include <Arduino.h>
 
 #include <Wire.h>
 #include <LCD.h>
