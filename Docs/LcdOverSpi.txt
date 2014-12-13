@@ -1,0 +1,7 @@
+
+* red to +5V
+* brown to gnd
+* yellow to A5
+* orange to A4
+
+Note: not using MOSI/MISO outputs?
