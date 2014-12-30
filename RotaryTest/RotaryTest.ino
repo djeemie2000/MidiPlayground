@@ -24,7 +24,7 @@ void PrintState()
   Serial.print((RotaryValue/4)%4);
   Serial.print(" ");
   Serial.print(RotaryValue%4);
-  Serial.print(" ");
+  Serial.print(" #");
   Serial.print(ChangeCount);
   Serial.print(" -> ");
   Serial.println(Position);
@@ -63,12 +63,15 @@ void loop()
         {
           --Position;
         }
-      }
-      
-      PrintState();
+      }      
     }
 
     RotaryValue = 4*RotaryValue + NewRotaryValue;    
+    
+    if(!NewRotaryValue)
+    {
+      PrintState();
+    }
   }
   
   delay(5);//will this prevent proper operation?
