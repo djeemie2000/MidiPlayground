@@ -71,6 +71,8 @@ void loop()
     RotaryValue = 4*RotaryValue + NewRotaryValue;    
   }
   
-  delay(10);//will this prevent proper operation?
+  delay(5);//will this prevent proper operation?
+  // 10 mSec will sometimes cause skips
+  // 5 mSec or below will give good performance
 }
 
