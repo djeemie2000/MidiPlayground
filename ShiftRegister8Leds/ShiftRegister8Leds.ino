@@ -1,5 +1,3 @@
-//**************************************************************//
-//****************************************************************
 
 #include "ShiftRegisterOutputs.h"
 
@@ -7,7 +5,7 @@
 int latchPin = 8;
 //Pin connected to SH_CP of 74HC595
 int clockPin = 12;
-////Pin connected to DS of 74HC595
+//Pin connected to DS of 74HC595
 int dataPin = 11;
 
 CShiftRegisterOutputs Outputs;
@@ -15,12 +13,8 @@ CShiftRegisterOutputs Outputs;
 
 void setup() 
 {
-  
-  Outputs.Begin(latchPin, clockPin, dataPin);
   //set pins to output so you can control the shift register
-//  pinMode(latchPin, OUTPUT);
-//  pinMode(clockPin, OUTPUT);
-//  pinMode(dataPin, OUTPUT);
+  Outputs.Begin(latchPin, clockPin, dataPin);
 }
 
 void loop() 
