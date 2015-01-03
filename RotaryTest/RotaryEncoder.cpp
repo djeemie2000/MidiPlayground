@@ -21,7 +21,7 @@ void CRotaryEncoder::Begin(int PinA, int PinB)
 
 void CRotaryEncoder::Read()
 {
-    unsigned int NewRotaryValue = 2*digitalRead(m_PinA) + digitalRead(m_PinB);
+    unsigned int NewRotaryValue = 2*(1-digitalRead(m_PinA)) + (1-digitalRead(m_PinB));
     unsigned int PrevRotaryValue = m_RotaryHistory%4;
     if(NewRotaryValue != PrevRotaryValue)
     {

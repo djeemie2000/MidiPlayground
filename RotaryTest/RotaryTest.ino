@@ -4,13 +4,13 @@ const int PinA = 2;
 const int PinB = 3;
 
 CRotaryEncoder Encoder;
-int PrevPosition;
+int PrevChangeCount;
 
 void setup()
 {
   Encoder.Begin(PinA, PinB);
   Serial.begin(115200);
-  PrevPosition = 0;
+  PrevChangeCount = 0;
 }
 
 void PrintState()
@@ -28,9 +28,9 @@ void loop()
 {
   Encoder.Read();
 
-  if(PrevPosition != Encoder.GetChangeCount())
+  if(PrevChangeCount != Encoder.GetChangeCount())
   {
-    PrevPosition = Encoder.GetChangeCount();
+    PrevChangeCount = Encoder.GetChangeCount();
     PrintState();
   }
   delay(5);//will this prevent proper operation?
