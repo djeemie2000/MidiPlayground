@@ -6,3 +6,9 @@ Periodic.h
 Step.h
 StepController.h
 
+MidiNoteDisplay.cpp
+MidiNotePlayer.cpp
+Periodic.cpp
+Step.cpp
+StepController.cpp
+Crop.h
