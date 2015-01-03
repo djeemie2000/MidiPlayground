@@ -1,7 +1,7 @@
-src/Makefile
-src/ButtonClickPress.ino
-src/ButtonHandler.h
-src/ButtonHandler.cpp
-src/PeriodicTrigger.h
-src/PeriodicTrigger.cpp
-src/ButtonClickPress.h
+Makefile
+HelloDuino.ino
+ButtonHandler.h
+ButtonHandler.cpp
+PeriodicTrigger.h
+PeriodicTrigger.cpp
+ButtonClickPress.h

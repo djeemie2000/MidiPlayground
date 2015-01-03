@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 #include "ButtonHandler.h"
 #include "PeriodicTrigger.h"
 
