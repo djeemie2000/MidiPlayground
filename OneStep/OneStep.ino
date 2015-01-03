@@ -27,7 +27,26 @@ volatile int Position;
 
 COneStepController Controller;
 
-void setup() 
+void OnInterupt()
+{
+  // read rotary
+  delayMicroseconds(500);// wait for bounces to stabilize. choose a delay that is not too long, and not too small
+  uint8_t CurrentRotaryCode = ( ENC_PORT >> 2 & 0x03  );
+  if(CurrentRotaryCode != (RotaryCode & 0x000003))
+  {
+    if( CurrentRotaryCode == 0x03)// || CurrentRotaryCode == 0x00 )
+    {
+      ++Position;
+    }
+    else if(CurrentRotaryCode == 0x01)// || CurrentRotaryCode == 0x01)
+    {
+      --Position;
+    }
+    RotaryCode = (RotaryCode << 4) | CurrentRotaryCode;
+  }
+}
+
+void setup()
 {
   RotaryCode = 0x00;
   Position = 0;
@@ -78,23 +97,3 @@ void loop()
     digitalWrite(TempoLedPin, LOW);
   }
 }
-
-void OnInterupt()
-{
-  // read rotary
-  delayMicroseconds(500);// wait for bounces to stabilize. choose a delay that is not too long, and not too small
-  uint8_t CurrentRotaryCode = ( ENC_PORT >> 2 & 0x03  );    
-  if(CurrentRotaryCode != (RotaryCode & 0x000003))
-  {
-    if( CurrentRotaryCode == 0x03)// || CurrentRotaryCode == 0x00 )
-    {
-      ++Position;
-    }
-    else if(CurrentRotaryCode == 0x01)// || CurrentRotaryCode == 0x01)
-    {
-      --Position;
-    }
-    RotaryCode = (RotaryCode << 4) | CurrentRotaryCode;
-  }
-}
-
