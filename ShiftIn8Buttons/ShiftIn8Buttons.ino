@@ -1,42 +1,29 @@
 //shift register experiment
 //coded by zxlee
 //iamzxlee.wordpress.com
- 
+
+#include "ShiftRegisterInputs.h"
   
-#define enable 2
-#define load 3
-#define clock 4
-#define data 5
+const int EnablePin = 2;
+const int LoadPin = 3;
+const int ClockPin = 4;
+const int DataPin = 5;
  
+CShiftRegisterInputs Inputs;
+
 void setup()
 {
-pinMode(enable,OUTPUT);
-pinMode(load,OUTPUT);
-pinMode(clock,OUTPUT);
-pinMode(data,INPUT);
-digitalWrite(load,HIGH);
-digitalWrite(enable,HIGH);
-Serial.begin(9600);
+  Inputs.Begin(EnablePin, LoadPin, ClockPin, DataPin);
+  Serial.begin(9600);
 }
  
 void loop()
 {
-  // pulse 5 microsec on PL
-  digitalWrite(load,LOW);
-  delayMicroseconds(5);
-  digitalWrite(load,HIGH);
-  delayMicroseconds(5);
- 
-  digitalWrite(clock,HIGH);
-  digitalWrite(enable,LOW);
-  
-  byte incoming=shiftIn(data,clock,MSBFIRST);
-  
-  digitalWrite(enable,HIGH);
- 
+  Inputs.Read();
+
   for(int i=7;i>=0;i--)
   {
-    if(bitRead(incoming,i)==1)
+    if(Inputs.Get(i))
     {
       Serial.print("1");
     }
