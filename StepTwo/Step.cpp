@@ -6,6 +6,8 @@ SStep::SStep()
     , s_Velocity(MaxVelocity)
     , s_Duration(0x40)//64
     , s_Active(true)
+    , s_NumSubSteps(1)
+    , s_GateMode(RepeatGateMode)
 {}
 
 void SStep::UpdateOctave(int Change)

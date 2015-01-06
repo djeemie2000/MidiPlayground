@@ -20,3 +20,4 @@ RotaryEncoder.cpp
 
 ClockTick.h
 ClockTick.cpp
+EditMode.h

@@ -5,6 +5,7 @@
 #include "Periodic.h"
 #include "MidiNotePlayer.h"
 #include "Display.h"
+#include "EditMode.h"
 #include <MidiSerial.h>
 
 class COneStepController
@@ -13,16 +14,6 @@ public:
     static const int NumSteps = 8;
     static const int EditAll = NumSteps;
 
-//    enum EEditMode
-//    {
-//        Octave = 0,
-//        Note,
-//        Velocity,
-//        Duration,
-//        Active,
-//        Tempo,
-//        EditModeSize
-//    };
     // TODO LiveMode / StepMode
 
     COneStepController();
@@ -50,13 +41,14 @@ private:
     int m_Rotary3Position;
     bool m_SelectStepButtonPressed;
 
+    EEditMode m_EditMode;
     CPeriodic m_Period;
     
     int m_PlayStep;
     int m_EditStep;
     SStep m_Step[NumSteps];
     CMidiNotePlayer m_MidiNotePlayer[NumSteps];
-    CMidiNoteDisplay m_MidiNoteDisplay;
+    CMidiNoteDisplay m_Display;
 };
 
 

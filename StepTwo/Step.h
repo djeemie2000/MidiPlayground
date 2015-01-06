@@ -9,13 +9,20 @@ struct SStep
     static const int MaxMidiNote = 127;//G11
     static const int MinVelocity = 0;
     static const int MaxVelocity = 127;
+    static const int DurationScale = 128;
     static const int MinDuration = 1;
-    static const int MaxDuration = 127;
+    static const int MaxDuration = DurationScale - 1;
+
+    static const char RepeatGateMode = 'R';
+    static const char LengthGateMode = 'L';
+    static const char PulseGateMode = 'P';
 
     uint8_t s_MidiNote;
     uint8_t s_Velocity;
     uint8_t s_Duration;
     bool    s_Active;
+    int     s_NumSubSteps;
+    char    s_GateMode;
 
     SStep();
 

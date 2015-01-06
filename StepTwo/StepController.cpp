@@ -6,12 +6,13 @@ COneStepController::COneStepController()
     , m_Rotary2Position(0)//?? initial value??
     , m_Rotary3Position(0)//?? initial value??
     , m_SelectStepButtonPressed(false)
+    , m_EditMode(NoteParameters)
     , m_Period()
     , m_PlayStep(0)
     , m_EditStep(0)
     , m_Step()
     , m_MidiNotePlayer()
-    , m_MidiNoteDisplay()
+    , m_Display()
 {}
 
 void COneStepController::Begin()
@@ -20,12 +21,13 @@ void COneStepController::Begin()
     {
         m_MidiNotePlayer[Step].Begin();
     }
-    m_MidiNoteDisplay.Begin();
+    m_Display.Begin();
     // display initial values:
-    for(int DisplayStep = 0; DisplayStep<NumSteps; ++DisplayStep)
-    {
-        m_MidiNoteDisplay.Update(DisplayStep, m_Step[DisplayStep].s_MidiNote, m_Step[DisplayStep].s_Velocity, m_Step[DisplayStep].s_Duration, m_Step[DisplayStep].s_Active);
-    }
+//    for(int DisplayStep = 0; DisplayStep<NumSteps; ++DisplayStep)
+//    {
+//        m_MidiNoteDisplay.UpdateNoteParameters(DisplayStep, m_Step[DisplayStep].s_MidiNote, m_Step[DisplayStep].s_Velocity, m_Step[DisplayStep].s_Duration, m_Step[DisplayStep].s_Active);
+//    }
+    m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), 0, 0);
 }
 
 int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rotary3Position,
@@ -33,11 +35,18 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
                                bool SelectStepButtonPressed,
                                unsigned long TimeStampMilliSeconds)
 {
-    // button off -> on => toggle edit mode (octave, note, velocity, Duration, Tempo)
+    bool UpdateDisplay = false;
+
+    // button off -> on => toggle edit mode
     if(m_EditModeButtonPressed != EditModeButtonPressed)
     {
-        //TODO toggle between vel/note/oct and duration/numsubsteps/gatemode
+        if(EditModeButtonPressed)
+        {
+            m_EditMode = static_cast<EEditMode>( (m_EditMode+1)%EditModeSize );
+        }
         m_EditModeButtonPressed = EditModeButtonPressed;
+
+        UpdateDisplay = true;
     }
 
     if(m_SelectStepButtonPressed!=SelectStepButtonPressed)
@@ -50,25 +59,17 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         m_SelectStepButtonPressed = SelectStepButtonPressed;
 
         // update display => edit step
-        m_MidiNoteDisplay.UpdateEditStep(m_EditStep);
+        UpdateDisplay = true;
     }
 
-    bool UpdateDisplay = false;
     int MinEditStep = (m_EditStep == EditAll) ? 0 : m_EditStep;
     int MaxEditStep = (m_EditStep == EditAll) ? NumSteps-1 : m_EditStep;
 
     if(m_Rotary1Position != Rotary1Position)
     {
-        if(m_EditModeButtonPressed)
+        switch(m_EditMode)
         {
-            // changed duration
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
-            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
-            {
-                m_Step[EditStep].UpdateDuration(RotaryPositionChange);
-            }
-        }
-        else
+        case NoteParameters:
         {
             // changed velocity
             int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
@@ -77,13 +78,50 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
                 m_Step[EditStep].UpdateVelocity(RotaryPositionChange);
             }
         }
+            break;
+        case SubStepParameters:
+        {
+            // changed duration
+            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateDuration(RotaryPositionChange);
+            }
+        }
+            break;
+        case TempoParameters:
+            break;
+        case SteppingParameters:
+            break;
+        case EditModeSize:
+        default:
+            break;
+        }
+
         m_Rotary1Position = Rotary1Position;
         UpdateDisplay = true;
     }
 
     if(m_Rotary2Position != Rotary2Position)
     {
-        if(m_EditModeButtonPressed)
+        switch(m_EditMode)
+        {
+        case NoteParameters:
+        {
+            // changed Note
+            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateNote(RotaryPositionChange);
+            }
+        }
+            break;
+        case SubStepParameters:
+        {
+
+        }
+            break;
+        case TempoParameters:
         {
             // changed Bpm BpB
             int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
@@ -98,28 +136,23 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
                 m_Period.UpdateTempo(-m_Period.GetTempoBpm()/2);
             }
         }
-        else
-        {
-            // changed Note
-            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
-            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
-            {
-                m_Step[EditStep].UpdateNote(RotaryPositionChange);
-            }
+            break;
+        case SteppingParameters:
+            break;
+        case EditModeSize:
+        default:
+            break;
         }
+
         m_Rotary2Position = Rotary2Position;
         UpdateDisplay = true;
     }
 
     if(m_Rotary3Position != Rotary3Position)
     {
-        if(m_EditModeButtonPressed)
+        switch(m_EditMode)
         {
-            // changed Bpm
-            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
-            m_Period.UpdateTempo(RotaryPositionChange);//relative change???
-        }
-        else
+        case NoteParameters:
         {
             // changed Octave
             int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
@@ -128,25 +161,40 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
                 m_Step[EditStep].UpdateOctave(RotaryPositionChange);
             }
         }
+            break;
+        case SubStepParameters:
+        {
+
+        }
+            break;
+        case TempoParameters:
+        {
+            // changed Bpm
+            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
+            m_Period.UpdateTempo(RotaryPositionChange);//relative change???
+        }
+            break;
+        case SteppingParameters:
+            break;
+        case EditModeSize:
+        default:
+            break;
+        }
+
         m_Rotary3Position = Rotary3Position;
         UpdateDisplay = true;
     }
 
-
-//        case Active:
-//            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
-//            {
-//                m_Step[EditStep].UpdateActive(RotaryPositionChange);
-//            }
-//            break;
+    //        case Active:
+    //            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+    //            {
+    //                m_Step[EditStep].UpdateActive(RotaryPositionChange);
+    //            }
+    //            break;
 
     if(UpdateDisplay)
     {
-        // update display
-        for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
-        {
-            m_MidiNoteDisplay.Update(EditStep, m_Step[EditStep].s_MidiNote, m_Step[EditStep].s_Velocity, m_Step[EditStep].s_Duration, m_Step[EditStep].s_Active);
-        }
+        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), 0, 0);
     }
 
     // timestamp => note on / note off required?
