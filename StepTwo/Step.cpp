@@ -8,6 +8,7 @@ SStep::SStep()
     , s_Active(true)
     , s_NumSubSteps(1)
     , s_GateMode(RepeatGateMode)
+    , s_Edit(false)
 {}
 
 void SStep::UpdateOctave(int Change)
@@ -44,5 +45,37 @@ void SStep::UpdateActive(int Change)
     else if(Change<0)
     {
         s_Active = false;
+    }
+}
+
+void SStep::UpdateNumSubSteps(int Change)
+{
+    s_NumSubSteps = Crop(s_NumSubSteps + Change, MinNumSubSteps, MaxNumSubSteps);
+}
+
+void SStep::UpdateGateMode(int Change)
+{
+    // R <-> L <-> P
+    if(0<Change)
+    {
+        if(s_GateMode==RepeatGateMode)
+        {
+            s_GateMode = LengthGateMode;
+        }
+        else if(s_GateMode==LengthGateMode)
+        {
+            s_GateMode = PulseGateMode;
+        }
+    }
+    else if(Change<0)
+    {
+        if(s_GateMode==LengthGateMode)
+        {
+            s_GateMode = RepeatGateMode;
+        }
+        else if(s_GateMode==PulseGateMode)
+        {
+            s_GateMode = LengthGateMode;
+        }
     }
 }

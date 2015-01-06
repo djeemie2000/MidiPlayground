@@ -47,9 +47,12 @@ private:
     int m_PlayStep;
     int m_EditStep;
     SStep m_Step[NumSteps];
+    int m_StepSize;
+    int m_StepIntervalBegin;
+    int m_StepIntervalLength;
+
     CMidiNotePlayer m_MidiNotePlayer[NumSteps];
     CMidiNoteDisplay m_Display;
 };
-
 
 #endif // STEPCONTROLLER_H

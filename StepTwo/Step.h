@@ -12,6 +12,8 @@ struct SStep
     static const int DurationScale = 128;
     static const int MinDuration = 1;
     static const int MaxDuration = DurationScale - 1;
+    static const int MinNumSubSteps = 1;
+    static const int MaxNumSubSteps = 8;
 
     static const char RepeatGateMode = 'R';
     static const char LengthGateMode = 'L';
@@ -23,6 +25,7 @@ struct SStep
     bool    s_Active;
     int     s_NumSubSteps;
     char    s_GateMode;
+    bool    s_Edit;
 
     SStep();
 
@@ -31,6 +34,8 @@ struct SStep
     void UpdateVelocity(int Change);
     void UpdateDuration(int Change);
     void UpdateActive(int Change);
+    void UpdateNumSubSteps(int Change);
+    void UpdateGateMode(int Change);
 };
 
 #endif // STEP_H
