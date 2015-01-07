@@ -48,6 +48,8 @@ private:
     SStep m_Step[NumSteps];
     CStepping m_Stepping;
 
+    int m_NumUpdates;
+
     CMidiNotePlayer m_MidiNotePlayer[NumSteps];
     CMidiNoteDisplay m_Display;
 };

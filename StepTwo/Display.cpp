@@ -134,12 +134,15 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         }
         break;
     case DebugMode:
-        m_lcd.home();
-        m_lcd.noBlink();
-        m_lcd.print("mSec ");
-        m_lcd.println(MilliSeconds);
-        m_lcd.print("# ");
-        m_lcd.println(NumUpdates);
+        if(NumUpdates%100==0)
+        {
+            m_lcd.home();
+            m_lcd.noBlink();
+            m_lcd.print("mSec ");
+            m_lcd.println(MilliSeconds);
+            m_lcd.print("# ");
+            m_lcd.println(NumUpdates);
+        }
         break;
     default:
         break;

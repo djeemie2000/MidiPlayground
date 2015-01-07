@@ -12,6 +12,7 @@ COneStepController::COneStepController()
     , m_EditStep(0)
     , m_Step()
     , m_Stepping()
+    , m_NumUpdates(0)
     , m_MidiNotePlayer()
     , m_Display()
 {}
@@ -32,6 +33,8 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
                                bool SelectStepButtonPressed,
                                unsigned long TimeStampMilliSeconds)
 {
+    ++m_NumUpdates;
+
     bool UpdateDisplay = false;
 
     // button off -> on => toggle edit mode
@@ -215,7 +218,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(UpdateDisplay)
     {
-        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), 0, 0);
+        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), TimeStampMilliSeconds, m_NumUpdates);
     }
 
     // timestamp => note on / note off required?
