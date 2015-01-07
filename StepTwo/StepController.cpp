@@ -98,6 +98,11 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         }
             break;
         case SteppingParameters:
+        {
+            // changed StepIntervalBegin
+            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            m_Stepping.UpdateStepSize(RotaryPositionChange);
+        }
             break;
         case EditModeSize:
         default:
@@ -124,7 +129,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SubStepParameters:
         {
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateNumSubSteps(RotaryPositionChange);
@@ -150,7 +155,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case SteppingParameters:
         {
             // changed StepIntervalBegin
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             m_Stepping.UpdateStepIntervalBegin(RotaryPositionChange);
         }
             break;
@@ -179,7 +184,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SubStepParameters:
         {
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateGateMode(RotaryPositionChange);
@@ -196,7 +201,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case SteppingParameters:
         {
             // changed StepIntervalLength
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             m_Stepping.UpdateStepIntervalLength(RotaryPositionChange);
         }
             break;

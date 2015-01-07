@@ -113,18 +113,19 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.home();
         m_lcd.noBlink();
         m_lcd.print("BPM ");
-        m_lcd.println(Bpm);
+        m_lcd.print(Bpm);
         break;
     case SteppingParameters:
         m_lcd.home();
         m_lcd.noBlink();
         m_lcd.print("Step = ");
-        m_lcd.println(StepSize);
+        m_lcd.print(StepSize);
+        m_lcd.setCursor(0,1);
         for(int idx = 0; idx<StepIntervalBegin; ++idx)
         {
             m_lcd.print("-");
         }
-        for(int idx = 0; idx<StepIntervalLength; ++idx)
+        for(int idx = StepIntervalBegin; idx<StepIntervalLength && idx<NumSteps; ++idx)
         {
             m_lcd.print("x");
         }
@@ -134,14 +135,15 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         }
         break;
     case DebugMode:
-        if(NumUpdates%100==0)
+        if(NumUpdates)
         {
             m_lcd.home();
             m_lcd.noBlink();
             m_lcd.print("mSec ");
-            m_lcd.println(MilliSeconds);
+            m_lcd.print(MilliSeconds);
+            m_lcd.setCursor(0,1);
             m_lcd.print("# ");
-            m_lcd.println(NumUpdates);
+            m_lcd.print(NumUpdates);
         }
         break;
     default:

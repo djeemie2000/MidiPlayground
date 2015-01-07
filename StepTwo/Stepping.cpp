@@ -2,6 +2,9 @@
 #include "Crop.h"
 
 CStepping::CStepping()
+ : m_StepSize(1)
+ , m_StepIntervalBegin(0)
+ , m_StepIntervalLength(8)
 {
 }
 int CStepping::GetStepSize() const
@@ -36,6 +39,7 @@ void CStepping::UpdateStepIntervalLength(int Change)
 
 int CStepping::Advance(int Step)
 {
-    int AdvancedStep = m_StepIntervalBegin + (Step-m_StepIntervalBegin+m_StepSize)%m_StepIntervalLength;
+    int IntervalLength = m_StepIntervalLength<MaxNumSteps-m_StepIntervalBegin ? m_StepIntervalLength : MaxNumSteps-m_StepIntervalBegin;
+    int AdvancedStep = m_StepIntervalBegin + (Step-m_StepIntervalBegin+m_StepSize)%IntervalLength;
     return AdvancedStep;
 }
