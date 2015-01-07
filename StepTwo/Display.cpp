@@ -67,7 +67,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.setCursor(0,1);
         for(int idx = 0; idx<NumSteps; ++idx)
         {
-            uint8_t VelocityRescaled = Steps[idx].s_Velocity/16;
+            uint8_t VelocityRescaled = Steps[idx].s_Velocity*8/SStep::VelocityScale;
             m_lcd.write(VelocityRescaled);
             m_lcd.print(Steps[idx].s_Active ? "+" : " ");
         }
@@ -94,7 +94,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.setCursor(0,1);
         for(int idx = 0; idx<NumSteps; ++idx)
         {
-            uint8_t DurationRescaled = Steps[idx].s_Duration/16;
+            uint8_t DurationRescaled = Steps[idx].s_Duration*8/SStep::DurationScale;
             m_lcd.write(DurationRescaled);
             m_lcd.print(Steps[idx].s_Active ? "+" : " ");
         }

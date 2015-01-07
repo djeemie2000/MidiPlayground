@@ -1,8 +1,9 @@
 #include "ClockTick.h"
+#include "Step.h"
 
 CClockTick::CClockTick()
  : m_Bpm(120)
- , m_SubDivision(128)
+ , m_SubDivision(SStep::DurationScale)
  , m_ReferenceMilliSeconds(0)
  , m_ReferenceClockTick(0)
  , m_CurrentClockTick(0)

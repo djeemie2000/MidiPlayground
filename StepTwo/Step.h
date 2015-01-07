@@ -7,9 +7,10 @@ struct SStep
 {
     static const int MinMidiNote = 24;//C0
     static const int MaxMidiNote = 127;//G11
+    static const int VelocityScale = 128;
     static const int MinVelocity = 0;
-    static const int MaxVelocity = 127;
-    static const int DurationScale = 128;
+    static const int MaxVelocity = VelocityScale -1;
+    static const int DurationScale = 8;
     static const int MinDuration = 1;
     static const int MaxDuration = DurationScale - 1;
     static const int MinNumSubSteps = 1;

@@ -1,4 +1,5 @@
 #include "Periodic.h"
+#include "Step.h"
 
 namespace
 {
@@ -45,7 +46,7 @@ int CPeriodic::Update(unsigned long TimeStampMilliSeconds, int Duration)
     else
     {
         // currently on => check for note off
-        unsigned long DurationMilliSeconds = Duration * BpmToMilliSeconds(s_TempoBpm) / 128;//maxDuration = 127 !!
+        unsigned long DurationMilliSeconds = Duration * BpmToMilliSeconds(s_TempoBpm) / SStep::DurationScale;
         unsigned long NoteOffTimeStamp = s_StartTimeStampMilliSeconds + DurationMilliSeconds;
         if(NoteOffTimeStamp<TimeStampMilliSeconds)
         {
