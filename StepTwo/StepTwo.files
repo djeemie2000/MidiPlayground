@@ -21,3 +21,6 @@ RotaryEncoder.cpp
 ClockTick.h
 ClockTick.cpp
 EditMode.h
+Stepping.h
+Stepping.cpp
+Crop.cpp

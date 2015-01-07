@@ -6,6 +6,7 @@
 #include "MidiNotePlayer.h"
 #include "Display.h"
 #include "EditMode.h"
+#include "Stepping.h"
 #include <MidiSerial.h>
 
 class COneStepController
@@ -27,8 +28,6 @@ public:
                bool SelectStepButtonPressed,
                unsigned long TimeStampMilliSeconds);
         
-    bool GetState() const;
-
     bool GetStepState(int Step) const;
 
 
@@ -47,9 +46,7 @@ private:
     int m_PlayStep;
     int m_EditStep;
     SStep m_Step[NumSteps];
-    int m_StepSize;
-    int m_StepIntervalBegin;
-    int m_StepIntervalLength;
+    CStepping m_Stepping;
 
     CMidiNotePlayer m_MidiNotePlayer[NumSteps];
     CMidiNoteDisplay m_Display;

@@ -11,9 +11,7 @@ COneStepController::COneStepController()
     , m_PlayStep(0)
     , m_EditStep(0)
     , m_Step()
-    , m_StepSize(1)
-    , m_StepIntervalBegin(0)
-    , m_StepIntervalLength(NumSteps)
+    , m_Stepping()
     , m_MidiNotePlayer()
     , m_Display()
 {}
@@ -26,7 +24,7 @@ void COneStepController::Begin()
     }
     m_Display.Begin();
     // display initial values:
-    m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_StepSize, m_StepIntervalBegin, m_StepIntervalLength, 0, 0);
+    m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), 0, 0);
 }
 
 int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rotary3Position,
@@ -90,6 +88,11 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         }
             break;
         case TempoParameters:
+        {
+            // changed StepSize
+            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            m_Stepping.UpdateStepSize(RotaryPositionChange);
+        }
             break;
         case SteppingParameters:
             break;
@@ -142,6 +145,11 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         }
             break;
         case SteppingParameters:
+        {
+            // changed StepIntervalBegin
+            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            m_Stepping.UpdateStepIntervalBegin(RotaryPositionChange);
+        }
             break;
         case EditModeSize:
         default:
@@ -183,6 +191,11 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         }
             break;
         case SteppingParameters:
+        {
+            // changed StepIntervalLength
+            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
+            m_Stepping.UpdateStepIntervalLength(RotaryPositionChange);
+        }
             break;
         case EditModeSize:
         default:
@@ -202,7 +215,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(UpdateDisplay)
     {
-        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_StepSize, m_StepIntervalBegin, m_StepIntervalLength, 0, 0);
+        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), 0, 0);
     }
 
     // timestamp => note on / note off required?
@@ -210,8 +223,8 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
     // action => on / off / do nothing
     if(Action == CPeriodic::NoteOnAction)
     {
-        // goto next play step
-        m_PlayStep = (m_PlayStep+1)%NumSteps;
+        // advance to next play step
+        m_PlayStep = m_Stepping.Advance(m_PlayStep);//m_PlayStep = (m_PlayStep+1)%NumSteps;
         //
         if(m_Step[m_PlayStep].s_Active)
         {
@@ -223,11 +236,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         m_MidiNotePlayer[m_PlayStep].NoteOff();
     }
     return Action;
-}
-
-bool COneStepController::GetState() const
-{
-    return m_Period.GetState();
 }
 
 bool COneStepController::GetStepState(int Step) const
