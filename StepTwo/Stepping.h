@@ -6,7 +6,6 @@ class CStepping
 public:
     CStepping();
 
-
     int GetStepSize() const;
     void UpdateStepSize(int Change);
 
