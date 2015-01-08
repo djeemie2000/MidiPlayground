@@ -28,8 +28,6 @@ void CMidiNoteDisplay::Begin()
   m_lcd.begin (16,2); // for 16 x 2 LCD module
   m_lcd.setBacklightPin(3,POSITIVE);
   m_lcd.setBacklight(HIGH);//backlight on
-  //m_lcd.noCursor();// show cursor
-  //m_lcd.blink();//noBlink();// no blinking cursor
 
   uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F };
   m_lcd.createChar(0, CustomCharacter);
@@ -38,6 +36,10 @@ void CMidiNoteDisplay::Begin()
     CustomCharacter[7-Bar] = 0x1F;//5 msb bits
     m_lcd.createChar(Bar, CustomCharacter);
   }
+
+  m_lcd.print("****StepSeq ****");
+  m_lcd.setCursor(0,1);
+  m_lcd.print("****  V0.2  ****");
 }
 
 void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSteps, int EditStep,
@@ -121,30 +123,26 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.print("Step = ");
         m_lcd.print(StepSize);
         m_lcd.setCursor(0,1);
-        for(int idx = 0; idx<StepIntervalBegin; ++idx)
+        for(int idx = 0; idx<NumSteps; ++idx)
         {
-            m_lcd.print("-");
-        }
-        for(int idx = StepIntervalBegin; idx<StepIntervalLength && idx<NumSteps; ++idx)
-        {
-            m_lcd.print("x");
-        }
-        for(int idx = StepIntervalBegin+StepIntervalLength; idx<NumSteps; ++idx)
-        {
-            m_lcd.print("-");
+            if(idx<StepIntervalBegin || StepIntervalBegin+StepIntervalLength<=idx)
+            {
+                m_lcd.print("-");
+            }
+            else
+            {
+                m_lcd.print("x");
+            }
         }
         break;
     case DebugMode:
-        if(NumUpdates)
-        {
-            m_lcd.home();
-            m_lcd.noBlink();
-            m_lcd.print("mSec ");
-            m_lcd.print(MilliSeconds);
-            m_lcd.setCursor(0,1);
-            m_lcd.print("# ");
-            m_lcd.print(NumUpdates);
-        }
+        m_lcd.home();
+        m_lcd.noBlink();
+        m_lcd.print("mSec ");
+        m_lcd.print(MilliSeconds);
+        m_lcd.setCursor(0,1);
+        m_lcd.print("# 0x");
+        m_lcd.print(NumUpdates, HEX);
         break;
     default:
         break;
