@@ -7,6 +7,7 @@ enum EEditMode
     SubStepParameters,
     TempoParameters,
     SteppingParameters,
+    ActivationParameters,
     DebugMode,
     EditModeSize
 };

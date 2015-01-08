@@ -118,6 +118,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.print(Bpm);
         break;
     case SteppingParameters:
+    case ActivationParameters:
         m_lcd.home();
         m_lcd.noBlink();
         for(int idx = 0; idx<NumSteps; ++idx)

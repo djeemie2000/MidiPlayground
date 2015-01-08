@@ -101,6 +101,14 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             m_Stepping.UpdateStepSize(RotaryPositionChange);
         }
             break;
+        case ActivationParameters:
+        {
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateActive(RotaryPositionChange);
+            }
+        }
+            break;
         case EditModeSize:
         default:
             break;
@@ -153,6 +161,14 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             m_Stepping.UpdateStepIntervalBegin(RotaryPositionChange);
         }
             break;
+        case ActivationParameters:
+        {
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateActive(RotaryPositionChange);
+            }
+        }
+            break;
         case EditModeSize:
         default:
             break;
@@ -196,6 +212,13 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             m_Stepping.UpdateStepIntervalLength(RotaryPositionChange);
         }
             break;
+        case ActivationParameters:
+        {
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateActive(RotaryPositionChange);
+            }
+        }
         case EditModeSize:
         default:
             break;
