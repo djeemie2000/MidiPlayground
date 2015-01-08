@@ -153,7 +153,14 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         }
         else
         {
-            m_lcd.setCursor(EditStep, 1);
+            if(EditMode==SteppingParameters)
+            {
+              m_lcd.setCursor(EditStep, 0);
+            }
+            if(EditMode==ActivationParameters)
+            {
+              m_lcd.setCursor(EditStep, 1);
+            }
             m_lcd.blink();
         }
         break;

@@ -47,6 +47,8 @@ void setup()
   StepOutputs.Begin(OutputLatchPin, OutputClockPin, OutputDataPin);
 
   Controller.Begin();
+  
+  delay(5000);//show startup screen for a while
 }
 
 void loop() 

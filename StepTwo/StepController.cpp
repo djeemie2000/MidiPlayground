@@ -268,5 +268,5 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
 bool COneStepController::GetStepState(int Step) const
 {
-    return (m_PlayStep==Step) && m_Period.GetState();
+    return (m_PlayStep==Step) && m_Step[m_PlayStep].s_Active && m_Period.GetState();
 }
