@@ -71,7 +71,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         {
             uint8_t VelocityRescaled = Steps[idx].s_Velocity*8/SStep::VelocityScale;
             m_lcd.write(VelocityRescaled);
-            m_lcd.print(Steps[idx].s_Active ? "+" : " ");
+            m_lcd.print(Steps[idx].s_Active ? "x" : "-");
         }
         // cursor
         if(EditStep==NumSteps)
@@ -98,7 +98,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         {
             uint8_t DurationRescaled = Steps[idx].s_Duration*8/SStep::DurationScale;
             m_lcd.write(DurationRescaled);
-            m_lcd.print(Steps[idx].s_Active ? "+" : " ");
+            m_lcd.print(Steps[idx].s_Active ? "x" : "-");
         }
         // cursor
         if(EditStep==NumSteps)
@@ -120,9 +120,6 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
     case SteppingParameters:
         m_lcd.home();
         m_lcd.noBlink();
-        m_lcd.print("Step = ");
-        m_lcd.print(StepSize);
-        m_lcd.setCursor(0,1);
         for(int idx = 0; idx<NumSteps; ++idx)
         {
             if(idx<StepIntervalBegin || StepIntervalBegin+StepIntervalLength<=idx)
@@ -134,6 +131,30 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
                 m_lcd.print("x");
             }
         }
+        m_lcd.print(" Step=");
+        m_lcd.print(StepSize);
+        m_lcd.setCursor(0,1);
+        for(int idx = 0; idx<NumSteps; ++idx)
+        {
+            if(Steps[idx].s_Active)
+            {
+                m_lcd.print("x");
+            }
+            else
+            {
+                m_lcd.print("-");
+            }
+        }
+        // cursor
+        if(EditStep==NumSteps)
+        {
+            m_lcd.noBlink();
+        }
+        else
+        {
+            m_lcd.setCursor(EditStep, 1);
+            m_lcd.blink();
+        }
         break;
     case DebugMode:
         m_lcd.home();
@@ -141,7 +162,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         m_lcd.print("mSec ");
         m_lcd.print(MilliSeconds);
         m_lcd.setCursor(0,1);
-        m_lcd.print("# 0x");
+        m_lcd.print("#  0x");
         m_lcd.print(NumUpdates, HEX);
         break;
     default:
