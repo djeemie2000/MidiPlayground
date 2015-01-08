@@ -68,12 +68,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(m_Rotary1Position != Rotary1Position)
     {
+        int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
         switch(m_EditMode)
         {
         case NoteParameters:
         {
             // changed velocity
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateVelocity(RotaryPositionChange);
@@ -83,7 +83,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case SubStepParameters:
         {
             // changed duration
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateDuration(RotaryPositionChange);
@@ -93,14 +92,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case TempoParameters:
         {
             // changed StepSize
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
             m_Stepping.UpdateStepSize(RotaryPositionChange);
         }
             break;
         case SteppingParameters:
         {
             // changed StepIntervalBegin
-            int RotaryPositionChange = Rotary1Position - m_Rotary1Position;
             m_Stepping.UpdateStepSize(RotaryPositionChange);
         }
             break;
@@ -115,12 +112,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(m_Rotary2Position != Rotary2Position)
     {
+        int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
         switch(m_EditMode)
         {
         case NoteParameters:
         {
             // changed Note
-            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateNote(RotaryPositionChange);
@@ -129,7 +126,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SubStepParameters:
         {
-            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateNumSubSteps(RotaryPositionChange);
@@ -139,7 +135,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case TempoParameters:
         {
             // changed Bpm BpB
-            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             if(0<RotaryPositionChange)
             {
                 // Bpm x 2
@@ -155,7 +150,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case SteppingParameters:
         {
             // changed StepIntervalBegin
-            int RotaryPositionChange = Rotary2Position - m_Rotary2Position;
             m_Stepping.UpdateStepIntervalBegin(RotaryPositionChange);
         }
             break;
@@ -170,12 +164,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(m_Rotary3Position != Rotary3Position)
     {
+        int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
         switch(m_EditMode)
         {
         case NoteParameters:
         {
             // changed Octave
-            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateOctave(RotaryPositionChange);
@@ -184,7 +178,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SubStepParameters:
         {
-            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
             {
                 m_Step[EditStep].UpdateGateMode(RotaryPositionChange);
@@ -194,14 +187,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         case TempoParameters:
         {
             // changed Bpm
-            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             m_Period.UpdateTempo(RotaryPositionChange);//relative change???
         }
             break;
         case SteppingParameters:
         {
             // changed StepIntervalLength
-            int RotaryPositionChange = Rotary3Position - m_Rotary3Position;
             m_Stepping.UpdateStepIntervalLength(RotaryPositionChange);
         }
             break;
@@ -220,6 +211,12 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
     //                m_Step[EditStep].UpdateActive(RotaryPositionChange);
     //            }
     //            break;
+
+    // always update when in debug mode
+    if(m_EditMode==DebugMode)
+    {
+        UpdateDisplay = true;
+    }
 
     if(UpdateDisplay)
     {
