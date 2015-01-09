@@ -229,8 +229,8 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         UpdateDisplay = true;
     }
 
-    // always update when in debug mode
-    if(m_EditMode==DebugMode)
+    // when in debug mode, update every ... calls
+    if(m_EditMode==DebugMode && m_NumUpdates%128==0)
     {
         UpdateDisplay = true;
     }
