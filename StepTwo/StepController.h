@@ -44,6 +44,7 @@ private:
     CPeriodic m_Period;
     
     int m_PlayStep;
+    int m_PlaySubStep;
     int m_EditStep;
     SStep m_Step[NumSteps];
     CStepping m_Stepping;

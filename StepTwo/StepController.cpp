@@ -9,6 +9,7 @@ COneStepController::COneStepController()
     , m_EditMode(NoteParameters)
     , m_Period()
     , m_PlayStep(0)
+    , m_PlaySubStep(0)
     , m_EditStep(0)
     , m_Step()
     , m_Stepping()
@@ -228,13 +229,6 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         UpdateDisplay = true;
     }
 
-    //        case Active:
-    //            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
-    //            {
-    //                m_Step[EditStep].UpdateActive(RotaryPositionChange);
-    //            }
-    //            break;
-
     // always update when in debug mode
     if(m_EditMode==DebugMode)
     {
@@ -251,8 +245,13 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
     // action => on / off / do nothing
     if(Action == CPeriodic::NoteOnAction)
     {
-        // advance to next play step
-        m_PlayStep = m_Stepping.Advance(m_PlayStep);//m_PlayStep = (m_PlayStep+1)%NumSteps;
+        // advance to next play (sub)step
+        ++m_PlaySubStep;
+        if(m_Step[m_PlayStep].s_NumSubSteps<=m_PlaySubStep)
+        {
+            m_PlaySubStep = 0;
+            m_PlayStep = m_Stepping.Advance(m_PlayStep);
+        }
         //
         if(m_Step[m_PlayStep].s_Active)
         {
