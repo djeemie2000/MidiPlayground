@@ -19,7 +19,7 @@ void loop()
 {
   lcd.home (); // set cursor to 0,0
   lcd.print("-tronixlabs.com----"); 
-  lcd.setCursor (0,1);        // go to start of 2nd line
+  lcd.setCursor (0,1);        // go to startf of 2nd line
   lcd.print(millis());
   lcd.setCursor (0,2);        // go to start of 2nd line
   lcd.print("-tronixlabs.com----"); 
