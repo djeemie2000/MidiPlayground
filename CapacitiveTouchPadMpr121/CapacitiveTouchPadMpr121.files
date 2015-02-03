@@ -2,3 +2,5 @@ Makefile
 CapacitiveTouchPadMpr121.ino
 mpr121.h
 
+CCapacitiveTouchPad.h
+CCapacitiveTouchPad.cpp
