@@ -37,9 +37,12 @@ void CMidiNoteDisplay::Begin()
     m_lcd.createChar(Bar, CustomCharacter);
   }
 
+  m_lcd.setCursor(0,0);
   m_lcd.print("****StepSeq ****");
   m_lcd.setCursor(0,1);
   m_lcd.print("****  V0.3  ****");
+  delay(5000);
+  m_lcd.clear();
 }
 
 void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSteps, int EditStep,
@@ -164,7 +167,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
     m_lcd.print(" ");
     for(int idx = 0; idx<NumSteps; ++idx)
     {
-        if(idx==EditStep || EditStep==NumSteps)
+        if(Steps[idx].s_Edit)
         {
             m_lcd.print("E");
         }
@@ -180,7 +183,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
     }
     else
     {
-        m_lcd.setCursor(EditStep, 3);
+        m_lcd.setCursor(4+EditStep, 3);
         m_lcd.blink();
     }
 }

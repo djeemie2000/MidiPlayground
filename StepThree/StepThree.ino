@@ -8,6 +8,7 @@
 #include "RotaryEncoder.h"
 #include "ShiftRegisterOutputs.h"
 #include "CCapacitiveTouchPad.h"
+#include "LedControlMS.h"
 #include "StepController.h"
 
 const int Encoder1PinA = 2;
@@ -17,9 +18,9 @@ const int Encoder2PinB = 5;
 const int Encoder3PinA = 6;
 const int Encoder3PinB = 7;
 
-const int OutputLatchPin = 10;
-const int OutputClockPin = 11;
-const int OutputDataPin = 12;
+const int LedLoadPin = 10;
+const int LedClockPin = 11;
+const int LedDataPin = 12;
 
 const int TempoPotPin = A0;
 const int TouchPadIrgPin = 8;
@@ -31,6 +32,14 @@ CRotaryEncoder Encoder3;
 CShiftRegisterOutputs StepOutputs;//TODO led matrix
 COneStepController Controller;
 CCapacitiveTouchPad TouchPad;
+/*
+ pin 12 is connected to the DataIn
+ pin 11 is connected to the CLK
+ pin 10 is connected to LOAD
+ We have only 1 MAX72XX.
+ */
+LedControl LedMatrix(LedDataPin, LedClockPin, LedLoadPin,1);
+
 
 void setup()
 {
@@ -38,13 +47,13 @@ void setup()
   Encoder2.Begin(Encoder2PinA, Encoder2PinB);
   Encoder3.Begin(Encoder3PinA, Encoder3PinB);
 
-  StepOutputs.Begin(OutputLatchPin, OutputClockPin, OutputDataPin);
-
   TouchPad.Begin(TouchPadIrgPin);
 
+  LedMatrix.shutdown(0,false);
+  LedMatrix.clearAll();
+  LedMatrix.setIntensity(0, 1);
+
   Controller.Begin();
-  
-  delay(5000);//show startup screen for a while
 }
 
 void loop() 
@@ -65,11 +74,16 @@ void loop()
                     SelectStepButtonPressed,
                     TimeStamp);
    
-  // update leds
-  // TODO use led matrix
+  // update leds on ledmatrix
+  const int EditLedRow = 0;
+  const int IntervalLedRow = 2;
+  const int ActiveLedRow = 3;
+  const int PlayingLedRow = 7;
   for(int Step = 0; Step<COneStepController::NumSteps; ++Step)
   {
-      StepOutputs.Set(Step, Controller.GetStepState(Step));
+      LedMatrix.setLed(0, EditLedRow, Step, Controller.GetStepEdit(Step));
+      LedMatrix.setLed(0, IntervalLedRow, Step, Controller.GetStepInInterval(Step));
+      LedMatrix.setLed(0, ActiveLedRow, Step, Controller.GetStepActive(Step));
+      LedMatrix.setLed(0, PlayingLedRow, Step, Controller.GetStepState(Step));
   }
-  StepOutputs.Write();
 }

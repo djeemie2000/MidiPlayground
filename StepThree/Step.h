@@ -37,6 +37,7 @@ struct SStep
     void UpdateActive(int Change);
     void UpdateNumSubSteps(int Change);
     void UpdateGateMode(int Change);
+    void UpdateEdit(int Change);
 };
 
 #endif // STEP_H

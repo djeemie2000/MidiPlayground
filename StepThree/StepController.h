@@ -29,6 +29,9 @@ public:
                unsigned long TimeStampMilliSeconds);
         
     bool GetStepState(int Step) const;
+    bool GetStepEdit(int Step) const;
+    bool GetStepInInterval(int Step) const;
+    bool GetStepActive(int Step) const;
 
 
     void OnClockTick();//private??

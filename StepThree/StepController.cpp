@@ -63,9 +63,13 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         UpdateDisplay = true;
     }
 
-    int MinEditStep = (m_EditStep == EditAll) ? 0 : m_EditStep;
-    int MaxEditStep = (m_EditStep == EditAll) ? NumSteps-1 : m_EditStep;
-    // TODO set Step.s_Edit and use this in code below
+    int MinEditStep = 0;//(m_EditStep == EditAll) ? 0 : m_EditStep;
+    int MaxEditStep = NumSteps-1;//(m_EditStep == EditAll) ? NumSteps-1 : m_EditStep;
+    // set Step.s_Edit and use this in code below
+    for(int EditStep = 0; EditStep<NumSteps; ++EditStep)
+    {
+        m_Step[EditStep].s_Edit = (EditStep==m_EditStep) || (m_EditStep==EditAll);
+    }
 
     if(m_Rotary1Position != Rotary1Position)
     {
@@ -268,4 +272,19 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 bool COneStepController::GetStepState(int Step) const
 {
     return (m_PlayStep==Step) && m_Step[m_PlayStep].s_Active && m_Period.GetState();
+}
+
+bool COneStepController::GetStepEdit(int Step) const
+{
+    return m_Step[Step].s_Edit;
+}
+
+bool COneStepController::GetStepInInterval(int Step) const
+{
+    return m_Stepping.GetStepIntervalBegin()<=Step && Step<m_Stepping.GetStepIntervalBegin()+m_Stepping.GetStepIntervalLength();
+}
+
+bool COneStepController::GetStepActive(int Step) const
+{
+    return m_Step[Step].s_Active;
 }
