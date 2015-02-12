@@ -46,10 +46,13 @@ private:
     T m_Phase;
 };
 
-CPhaseAccumulator<float> PhaseAcc;
+CPhaseAccumulator<float> PhaseAcc1;
+CPhaseAccumulator<float> PhaseAcc2;
+float BasePhaseIncr;
 volatile float PhaseIncr;
-float Phase;
-int Value;
+volatile float Detune;
+//float Phase;
+//int Value;
 int WaveForm;
 unsigned long InteruptCount = 0;
 
@@ -92,25 +95,40 @@ float Power(float Phase)
 void setup()
 {
   pinMode(OutPin, OUTPUT);
-  WaveForm = 0;
-  const float SamplingFrequency = 1760;
-  float NoteFrequency = 80;
-  PhaseIncr = 2*NoteFrequency/SamplingFrequency;
-  beginTimer1(SamplingFrequency);
+  WaveForm = 2;
+  Detune = 1.5007;
+
   Serial.begin(115200);
-  Serial.print("PhaseIncr=");
-  Serial.println(PhaseIncr);
+//  Serial.print("PhaseIncr=");
+//  Serial.println(PhaseIncr);
+
+  const float SamplingFrequency = 1760;
+  float NoteFrequency = 150;
+  BasePhaseIncr = 2*NoteFrequency/SamplingFrequency;
+  PhaseIncr = BasePhaseIncr;
+  
+  beginTimer1(SamplingFrequency);
 }
 
 
 void loop()
 {
 
-  delay(1000);
-  WaveForm = (WaveForm+1)%5;
+  delay(500);
+//  if(WaveForm==2)
+//  {
+//    WaveForm = 4;
+//  }
+//  else {
+//    WaveForm = 2;
+//  }
+//  //WaveForm = (WaveForm+1)%5;
   unsigned long Cnt = InteruptCount;
   InteruptCount = 0;
   Serial.println(Cnt);
+  
+  PhaseIncr = BasePhaseIncr;
+ 
 
   //Serial.print(Phase);//????????????
   //Serial.print(" ");//????????????
@@ -122,40 +140,39 @@ ISR(TIMER1_COMPA_vect) // timer compare interrupt service routine
 {
   ++InteruptCount;
   
-  Phase = PhaseAcc(PhaseIncr);
+  PhaseIncr *= 0.998;
+  float Phase1 = PhaseAcc1(PhaseIncr);
+  float Phase2 = PhaseAcc2(Detune*PhaseIncr);
+  
   // SawUp
   float Out = 0;
   if(WaveForm==0)
   {
-    Out = SawUp(Phase);
+    Out = SawUp(Phase1) + SawUp(Phase2);
   }
   else if(WaveForm==1)
   {
-    Out = SawDown(Phase);
+    Out = SawDown(Phase1) + SawDown(Phase2);
   }
   else if(WaveForm==2)
   {
-    Out = Pulse(Phase);
+    Out = Pulse(Phase1) * Pulse(Phase2);
   }
   else if(WaveForm==3)
   {
-    Out = PseudoSin(Phase);
+    Out = PseudoSin(Phase1) + PseudoSin(Phase2);
   }
   else if(WaveForm==4)
   {
-    Out = FullPseudoSin(Phase);
+    Out = FullPseudoSin(Phase1) * FullPseudoSin(Phase2);
   }
   else if(WaveForm==5)
   {
-    Out = Power(Phase);
+    Out = Power(Phase1) + Power(Phase2);
   }
   
-  Value = 512*(1+Out);//convert [-1,+1] to [0, 1024]
-  Value = max(0, min(1023, Value));
-  
-  //Serial.print(Phase);//????????????
-  //Serial.print(" ");//????????????
-  //Serial.println(Value);//????????????
+  int Value = 512*(1+Out);//convert [-1,+1] to [0, 1024]
+  Value = max(0, min(1023, Value));// limit!
   
   analogWrite(OutPin, Value);
 }
