@@ -4,7 +4,7 @@ Performs timings on some arduino functions.
 
 Results on Uno:
 
-AnalogRead x 10000 = 1120 msec => 1.1 mSec
+AnalogRead x 10000 = 1120 msec => 0.11 mSec
 
 DigitalRead x 10000 = 50 msec => 5 uSec
 
