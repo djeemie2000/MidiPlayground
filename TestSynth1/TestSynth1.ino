@@ -96,14 +96,14 @@ void setup()
 {
   pinMode(OutPin, OUTPUT);
   WaveForm = 2;
-  Detune = 1.5007;
+  Detune = 0.5001;
 
   Serial.begin(115200);
 //  Serial.print("PhaseIncr=");
 //  Serial.println(PhaseIncr);
 
   const float SamplingFrequency = 1760;
-  float NoteFrequency = 150;
+  float NoteFrequency = 80;
   BasePhaseIncr = 2*NoteFrequency/SamplingFrequency;
   PhaseIncr = BasePhaseIncr;
   
@@ -113,23 +113,28 @@ void setup()
 
 void loop()
 {
-
-  delay(500);
-//  if(WaveForm==2)
-//  {
-//    WaveForm = 4;
-//  }
-//  else {
-//    WaveForm = 2;
-//  }
-//  //WaveForm = (WaveForm+1)%5;
-  unsigned long Cnt = InteruptCount;
-  InteruptCount = 0;
-  Serial.println(Cnt);
+  for(int Repeat = 0; Repeat<3; ++Repeat)
+  {
+    delay(2000);
+  //  if(WaveForm==2)
+  //  {
+  //    WaveForm = 4;
+  //  }
+  //  else {
+  //    WaveForm = 2;
+  //  }
+    WaveForm = (WaveForm+1)%5;
+    unsigned long Cnt = InteruptCount;
+    InteruptCount = 0;
+   // Serial.println(Cnt);
+  }
   
-  PhaseIncr = BasePhaseIncr;
+  PhaseIncr *= 1.3;
+  if(4*BasePhaseIncr<PhaseIncr)
+  {
+    PhaseIncr = BasePhaseIncr;//(1+0.25*WaveForm);
+  }
  
-
   //Serial.print(Phase);//????????????
   //Serial.print(" ");//????????????
   //Serial.println(Value);//????????????
@@ -140,7 +145,7 @@ ISR(TIMER1_COMPA_vect) // timer compare interrupt service routine
 {
   ++InteruptCount;
   
-  PhaseIncr *= 0.998;
+  //PhaseIncr *= 0.997;
   float Phase1 = PhaseAcc1(PhaseIncr);
   float Phase2 = PhaseAcc2(Detune*PhaseIncr);
   
@@ -156,7 +161,7 @@ ISR(TIMER1_COMPA_vect) // timer compare interrupt service routine
   }
   else if(WaveForm==2)
   {
-    Out = Pulse(Phase1) * Pulse(Phase2);
+    Out = Pulse(Phase1) + Pulse(Phase2);
   }
   else if(WaveForm==3)
   {
@@ -164,14 +169,15 @@ ISR(TIMER1_COMPA_vect) // timer compare interrupt service routine
   }
   else if(WaveForm==4)
   {
-    Out = FullPseudoSin(Phase1) * FullPseudoSin(Phase2);
+    Out = FullPseudoSin(Phase1) + FullPseudoSin(Phase2);
   }
   else if(WaveForm==5)
   {
     Out = Power(Phase1) + Power(Phase2);
   }
   
-  int Value = 512*(1+Out);//convert [-1,+1] to [0, 1024]
+  float Amplitude = 0.5f;
+  int Value = 512*(1+Amplitude*Out);//convert [-1,+1] to [0, 1024]
   Value = max(0, min(1023, Value));// limit!
   
   analogWrite(OutPin, Value);
