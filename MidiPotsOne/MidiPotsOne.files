@@ -1,0 +1,11 @@
+Makefile
+MidiPotsOne.ino
+Display.h
+Display.cpp
+Controller.h
+Controller.cpp
+EditMode.h
+CCapacitiveTouchPad.h
+CCapacitiveTouchPad.cpp
+mpr121.h
+ControlChange.h
