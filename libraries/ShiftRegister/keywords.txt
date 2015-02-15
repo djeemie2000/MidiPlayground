@@ -1,0 +1,24 @@
+###########################################
+# Syntax Coloring Map For RotaryEncoder
+###########################################
+
+###########################################
+# Datatypes (KEYWORD1)
+###########################################
+
+CShiftRegisterOutputs       KEYWORD1
+CShiftRegisterInputs        KEYWORD1
+
+###########################################
+# Methods and Functions (KEYWORD2)
+###########################################
+Begin                KEYWORD2
+Set                  KEYWORD2
+Write                KEYWORD2
+Get                  KEYWORD2
+Read                 KEYWORD2
+
+###########################################
+# Constants (LITERAL1)
+###########################################
+
