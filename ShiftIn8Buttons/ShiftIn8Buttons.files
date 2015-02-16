@@ -1,4 +1,2 @@
 Makefile
 ShiftIn8Buttons.ino
-ShiftRegisterInputs.h
-ShiftRegisterInputs.cpp

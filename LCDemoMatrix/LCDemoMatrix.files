@@ -1,4 +1,2 @@
 Makefile
 LCDemoMatrix.ino
-LedControlMS.h
-LedControlMS.cpp

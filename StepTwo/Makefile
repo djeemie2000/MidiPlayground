@@ -2,7 +2,7 @@
 
 ARDUINO_DIR     = /usr/share/arduino/
 TARGET          = output
-ARDUINO_LIBS    = LiquidCrystal MidiSerial Wire
+ARDUINO_LIBS    = LiquidCrystal MidiSerial Wire RotaryEncoder ShiftRegister
 
 
 # Avrdude code for programming

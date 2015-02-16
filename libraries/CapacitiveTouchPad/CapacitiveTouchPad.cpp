@@ -1,4 +1,4 @@
-#include "CCapacitiveTouchPad.h"
+#include "CapacitiveTouchPad.h"
 #include <Wire.h>
 #include "mpr121.h"
 

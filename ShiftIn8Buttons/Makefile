@@ -2,7 +2,7 @@
 
 ARDUINO_DIR     = /usr/share/arduino/
 TARGET          = output
-ARDUINO_LIBS    =  
+ARDUINO_LIBS    = ShiftRegister
 
 
 # Avrdude code for programming

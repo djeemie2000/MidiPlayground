@@ -5,7 +5,7 @@
 
 #include <MidiSerial.h>
 
-#include "CCapacitiveTouchPad.h"
+#include "CapacitiveTouchPad.h"
 #include "Controller.h"
 
 const int AnalogInPin1 = A0;

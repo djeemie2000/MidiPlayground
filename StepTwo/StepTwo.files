@@ -11,13 +11,6 @@ Step.h
 Step.cpp
 StepController.h
 StepController.cpp
-ShiftRegisterInputs.h
-ShiftRegisterInputs.cpp
-ShiftRegisterOutputs.h
-ShiftRegisterOutputs.cpp
-RotaryEncoder.h
-RotaryEncoder.cpp
-
 ClockTick.h
 ClockTick.cpp
 EditMode.h

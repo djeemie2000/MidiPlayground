@@ -7,7 +7,7 @@
 
 #include "RotaryEncoder.h"
 #include "ShiftRegisterOutputs.h"
-#include "CCapacitiveTouchPad.h"
+#include "CapacitiveTouchPad.h"
 #include "LedControlMS.h"
 #include "StepController.h"
 

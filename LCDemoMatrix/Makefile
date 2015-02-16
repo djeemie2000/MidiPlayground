@@ -2,7 +2,7 @@
 
 ARDUINO_DIR     = /usr/share/arduino/
 TARGET          = output
-ARDUINO_LIBS    = LiquidCrystal Wire
+ARDUINO_LIBS    = LiquidCrystal Wire LedMatrix
 
 
 # Avrdude code for programming
