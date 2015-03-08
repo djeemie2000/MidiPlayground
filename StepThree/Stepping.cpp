@@ -4,7 +4,7 @@
 CStepping::CStepping()
  : m_StepSize(1)
  , m_StepIntervalBegin(0)
- , m_StepIntervalLength(8)
+ , m_StepIntervalLength(MaxNumSteps)
 {
 }
 int CStepping::GetStepSize() const

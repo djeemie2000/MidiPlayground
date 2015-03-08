@@ -75,15 +75,19 @@ void loop()
                     TimeStamp);
    
   // update leds on ledmatrix
+  const int LedMatrixId = 0;
+  const int LedMatrixNumColums = 8;
   const int EditLedRow = 0;
-  const int IntervalLedRow = 2;
-  const int ActiveLedRow = 3;
-  const int PlayingLedRow = 7;
+  const int IntervalLedRow = 1;
+  const int ActiveLedRow = 2;
+  const int PlayingLedRow = 3;
   for(int Step = 0; Step<COneStepController::NumSteps; ++Step)
   {
-      LedMatrix.setLed(0, EditLedRow, Step, Controller.GetStepEdit(Step));
-      LedMatrix.setLed(0, IntervalLedRow, Step, Controller.GetStepInInterval(Step));
-      LedMatrix.setLed(0, ActiveLedRow, Step, Controller.GetStepActive(Step));
-      LedMatrix.setLed(0, PlayingLedRow, Step, Controller.GetStepState(Step));
+      int Column = Step%LedMatrixNumColums;
+      int RowOffset = (Step/LedMatrixNumColums)*4;
+      LedMatrix.setLed(LedMatrixId, RowOffset+EditLedRow, Column, Controller.GetStepEdit(Step));
+      LedMatrix.setLed(LedMatrixId, RowOffset+IntervalLedRow, Column, Controller.GetStepInInterval(Step));
+      LedMatrix.setLed(LedMatrixId, RowOffset+ActiveLedRow, Column, Controller.GetStepActive(Step));
+      LedMatrix.setLed(LedMatrixId, RowOffset+PlayingLedRow, Column, Controller.GetStepState(Step));
   }
 }

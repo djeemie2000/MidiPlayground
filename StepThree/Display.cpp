@@ -29,7 +29,7 @@ void CMidiNoteDisplay::Begin()
   m_lcd.setBacklightPin(3,POSITIVE);
   m_lcd.setBacklight(HIGH);//backlight on
 
-  uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F };
+  uint8_t CustomCharacter[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   m_lcd.createChar(0, CustomCharacter);
   for(int Bar = 1; Bar<8; ++Bar)
   {
@@ -78,7 +78,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         for(int idx = 0; idx<NumSteps; ++idx)
         {
             uint8_t VelocityRescaled = Steps[idx].s_Velocity*8/SStep::VelocityScale;
-            m_lcd.write(VelocityRescaled);
+            m_lcd.write(char(VelocityRescaled));
         }
 
         break;
@@ -101,7 +101,7 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
         for(int idx = 0; idx<NumSteps; ++idx)
         {
             uint8_t DurationRescaled = Steps[idx].s_Duration*8/SStep::DurationScale;
-            m_lcd.write(DurationRescaled);
+            m_lcd.write(char(DurationRescaled));
         }
 
         break;
