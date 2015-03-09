@@ -9,6 +9,7 @@ SStep::SStep()
     , s_NumSubSteps(1)
     , s_GateMode(RepeatGateMode)
     , s_Edit(false)
+    , s_StepMode(ContinueStepMode)
 {}
 
 void SStep::UpdateOctave(int Change)
@@ -113,5 +114,61 @@ void SStep::UpdateEdit(int Change)
         {
             s_Edit = false;
         }
+    }
+}
+
+void SStep::UpdateStepMode(int Change)
+{
+    if(s_Edit)
+    {
+        // + <->  <-> - <-> 0 <-> ?
+        if(s_StepMode == ContinueStepMode)
+        {
+            if(0<Change)
+            {
+                s_StepMode = SkipStepMode;
+            }
+        }
+        else if(s_StepMode == SkipStepMode)
+        {
+            if(0<Change)
+            {
+                s_StepMode = InvertStepMode;
+            }
+            else if(Change<0)
+            {
+                s_StepMode = ContinueStepMode;
+            }
+        }
+        else if(s_StepMode == InvertStepMode)
+        {
+            if(0<Change)
+            {
+                s_StepMode = SkipStepMode;
+            }
+            else if(Change<0)
+            {
+                s_StepMode = ResetStepMode;
+            }
+        }
+        else if(s_StepMode == ResetStepMode)
+        {
+            if(0<Change)
+            {
+                s_StepMode = InvertStepMode;
+            }
+            else if(Change<0)
+            {
+                s_StepMode = RandomStepMode;
+            }
+        }
+        else if(s_StepMode == RandomStepMode)
+        {
+            if(Change<0)
+            {
+                s_StepMode = ResetStepMode;
+            }
+        }
+
     }
 }

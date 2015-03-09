@@ -20,6 +20,12 @@ struct SStep
     static const char LengthGateMode = 'L';
     static const char PulseGateMode = 'P';
 
+    static const char ContinueStepMode = '+';
+    static const char InvertStepMode = '-';
+    static const char SkipStepMode = ' ';
+    static const char ResetStepMode = '0';
+    static const char RandomStepMode = '?';
+
     uint8_t s_MidiNote;
     uint8_t s_Velocity;
     uint8_t s_Duration;
@@ -27,6 +33,7 @@ struct SStep
     int     s_NumSubSteps;
     char    s_GateMode;
     bool    s_Edit;
+    char    s_StepMode;
 
     SStep();
 
@@ -38,6 +45,7 @@ struct SStep
     void UpdateNumSubSteps(int Change);
     void UpdateGateMode(int Change);
     void UpdateEdit(int Change);
+    void UpdateStepMode(int Change);
 };
 
 #endif // STEP_H

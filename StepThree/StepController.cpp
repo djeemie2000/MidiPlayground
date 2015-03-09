@@ -13,6 +13,7 @@ COneStepController::COneStepController()
     , m_EditStep(0)
     , m_Step()
     , m_Stepping()
+    //, m_StepSize(1)
     , m_NumUpdates(0)
     , m_MidiNotePlayer()
     , m_Display()
@@ -26,7 +27,7 @@ void COneStepController::Begin()
     }
     m_Display.Begin();
     // display initial values:
-    m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), 0, 0);
+    m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), 0, 0);
 }
 
 int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rotary3Position,
@@ -96,8 +97,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case TempoParameters:
         {
-            // changed StepSize
-            m_Stepping.UpdateStepSize(RotaryPositionChange);
+            //
         }
             break;
         case SteppingParameters:
@@ -162,8 +162,11 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SteppingParameters:
         {
-            // changed StepIntervalLength
-            m_Stepping.UpdateStepIntervalLength(RotaryPositionChange);
+            // changed StepMode
+            for(int EditStep = MinEditStep; EditStep<=MaxEditStep; ++EditStep)
+            {
+                m_Step[EditStep].UpdateStepMode(RotaryPositionChange);
+            }
         }
             break;
         case ActivationParameters:
@@ -213,8 +216,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
             break;
         case SteppingParameters:
         {
-            // changed StepIntervalBegin
-            m_Stepping.UpdateStepIntervalBegin(RotaryPositionChange);
+            // unused?
         }
             break;
         case ActivationParameters:
@@ -241,7 +243,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
 
     if(UpdateDisplay)
     {
-        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), m_Stepping.GetStepIntervalBegin(), m_Stepping.GetStepIntervalLength(), TimeStampMilliSeconds, m_NumUpdates);
+        m_Display.Update(m_EditMode, m_Step, NumSteps, m_EditStep, m_Period.GetTempoBpm(), m_Stepping.GetStepSize(), TimeStampMilliSeconds, m_NumUpdates);
     }
 
     // timestamp => note on / note off required?
@@ -254,7 +256,7 @@ int COneStepController::Update(int Rotary1Position, int Rotary2Position, int Rot
         if(m_Step[m_PlayStep].s_NumSubSteps<=m_PlaySubStep)
         {
             m_PlaySubStep = 0;
-            m_PlayStep = m_Stepping.Advance(m_PlayStep);
+            AdvanceStep();
         }
         //
         if(m_Step[m_PlayStep].s_Active)
@@ -281,10 +283,62 @@ bool COneStepController::GetStepEdit(int Step) const
 
 bool COneStepController::GetStepInInterval(int Step) const
 {
-    return m_Stepping.GetStepIntervalBegin()<=Step && Step<m_Stepping.GetStepIntervalBegin()+m_Stepping.GetStepIntervalLength();
+    return m_Step[Step].s_StepMode!=SStep::SkipStepMode;
+    //m_Stepping.GetStepIntervalBegin()<=Step && Step<m_Stepping.GetStepIntervalBegin()+m_Stepping.GetStepIntervalLength();
 }
 
 bool COneStepController::GetStepActive(int Step) const
 {
     return m_Step[Step].s_Active;
+}
+
+void COneStepController::AdvanceStep()
+{
+    int AdvanceCounter = m_Stepping.GetStepSize();
+    while(0<AdvanceCounter)
+    {
+        // check stepmode of current step:
+        char CurrentStepMode = m_Step[m_PlayStep].s_StepMode;
+        if(CurrentStepMode == SStep::InvertStepMode)
+        {
+            // invert => invert step direction => step +/-1
+            m_StepDirection = -m_StepDirection;
+
+            m_PlayStep = m_PlayStep+m_StepDirection;
+            if(m_PlayStep<0)
+            {
+                m_PlayStep += NumSteps;
+            }
+            else if(NumSteps<=m_PlayStep)
+            {
+                m_PlayStep -= NumSteps;
+            }
+        }
+        else if(CurrentStepMode == SStep::InvertStepMode)
+        {
+            // continue => Step+/-1 ~ current step direction
+            m_PlayStep = m_PlayStep+m_StepDirection;
+            if(m_PlayStep<0)
+            {
+                m_PlayStep += NumSteps;
+            }
+            else if(NumSteps<=m_PlayStep)
+            {
+                m_PlayStep -= NumSteps;
+            }
+        }
+        else if(CurrentStepMode == SStep::ResetStepMode)
+        {
+            // reset => next step is zero
+            m_PlayStep = 0;
+        }
+        // TODO random
+
+        // check new play step : if skipped, we did not actually advance
+        if(m_Step[m_PlayStep].s_StepMode != SStep::SkipStepMode)
+        {
+            --AdvanceCounter;
+        }
+        //TODO handle case where all are skipped!
+    }
 }

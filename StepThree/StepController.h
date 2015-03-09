@@ -37,6 +37,8 @@ public:
     void OnClockTick();//private??
 
 private:
+    void AdvanceStep();
+
     bool m_EditModeButtonPressed;
     int m_Rotary1Position;
     int m_Rotary2Position;
@@ -50,7 +52,10 @@ private:
     int m_PlaySubStep;
     int m_EditStep;
     SStep m_Step[NumSteps];
+
     CStepping m_Stepping;
+    int m_StepDirection;
+
 
     int m_NumUpdates;
 

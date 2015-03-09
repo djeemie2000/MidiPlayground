@@ -47,7 +47,7 @@ void CMidiNoteDisplay::Begin()
 
 void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSteps, int EditStep,
                               int Bpm,
-                              int StepSize, int StepIntervalBegin, int StepIntervalLength,
+                              int StepSize,
                               unsigned long MilliSeconds, unsigned long NumUpdates)
 {
     if(EditMode!=m_EditMode)
@@ -110,26 +110,11 @@ void CMidiNoteDisplay::Update(EEditMode EditMode, const SStep *Steps, int NumSte
     case SteppingParameters:
     case ActivationParameters:
         m_lcd.home();
-        // lines : 1 interval, 2 active, 3 step
+        // lines : 1 stepmode, 2 active, 3 step
         m_lcd.print("Int ");
         for(int idx = 0; idx<NumSteps; ++idx)
         {
-            if(idx==StepIntervalBegin)
-            {
-                m_lcd.print("B");
-            }
-            else if(idx+1==StepIntervalBegin+StepIntervalLength)
-            {
-                m_lcd.print("E");
-            }
-            else if(idx<StepIntervalBegin || StepIntervalBegin+StepIntervalLength<=idx)
-            {
-                m_lcd.print("-");
-            }
-            else
-            {
-                m_lcd.print("x");
-            }
+            m_lcd.print(Steps[idx].s_StepMode);
         }
         m_lcd.setCursor(0,1);
         m_lcd.print("Act ");

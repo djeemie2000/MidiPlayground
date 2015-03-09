@@ -23,8 +23,8 @@ public:
                 const SStep* Steps, int NumSteps, // note and (sub)step
                 int EditStep,
                 int Bpm, //tempo
-                int StepSize, int StepIntervalBegin, int StepIntervalLength, // stepping
-                unsigned long MilliSeconds, unsigned long NumUpdates);
+                int StepSize, // stepping
+                unsigned long MilliSeconds, unsigned long NumUpdates);//debug
 
 private:
     LiquidCrystal_I2C	m_lcd; 
