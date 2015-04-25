@@ -8,7 +8,7 @@ class CMidiSerial
 public:
   CMidiSerial(){}
   
-  void Begin(int Baudrate)
+  void Begin(long Baudrate)
   {
     Serial.begin(Baudrate);
   }
