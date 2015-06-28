@@ -9,24 +9,30 @@
  pin 10 is connected to LOAD 
  We have only a single MAX72XX.
  */
-LedControl lc=LedControl(12,11,10,1);
+const int NumLedMatrices = 2;
+const int DataPin = 12;
+const int ClockPin = 11;
+const int LoadPin = 10;
+LedControl lc=LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
 
 /* we always wait a bit between updates of the display */
 unsigned long delaytime=50;
 
 void setup() {
+  for(int idx = 0; idx<NumLedMatrices; ++idx)
+  {
   /*
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
    */
-  lc.shutdown(0,false);
-  /* Set the brightness to a low values */
-  lc.setIntensity(0,1);
-  /* and clear the display */
-  delay(2000);
-  lc.clearDisplay(0);
-  
-  Serial.begin(9600);
+    lc.shutdown(idx,false);
+    /* Set the brightness to a low values */
+    lc.setIntensity(idx,1);
+    /* and clear the display */
+    delay(1000);
+    lc.clearDisplay(idx);
+  }
+  Serial.begin(115200);
 }
 
 /*
@@ -101,17 +107,20 @@ void writeArduinoOnMatrix() {
  The pattern will blink along with the row-number.
  row number 4 (index==3) will blink 4 times etc.
  */
-void rows() {
-  for(int row=0;row<8;row++) {
+void rows(int Matrix) 
+{
+  for(int row=0;row<8;row++) 
+  {
     delay(delaytime);
-    lc.setRow(0,row,B11111111);
+    lc.setRow(Matrix, row, B11111111);
     delay(delaytime);
-    lc.setRow(0,row,(byte)0);
-    for(int i=0;i<row;i++) {
+    lc.setRow(Matrix, row, (byte)0);
+    for(int i=0;i<row;i++) 
+    {
       delay(delaytime);
-      lc.setRow(0,row,B11111111);
+      lc.setRow(Matrix, row, B11111111);
       delay(delaytime);
-      lc.setRow(0,row,(byte)0);
+      lc.setRow(Matrix, row, (byte)0);
     }
   }
 }
@@ -194,8 +203,13 @@ void loop() {
    //writeArduinoOnMatrix();
    //writeArduinoOnMatrix();
    //delay(2000);
-   //Serial.println("Rows");
-   //rows();
+   for(int idx = 0; idx<NumLedMatrices; ++idx)
+   {
+     Serial.print("Rows ");
+     Serial.println(idx);
+     rows(idx);
+   }
+   
    //Serial.println("Columns");
    //columns();
    //Serial.println("SingleDots");
@@ -204,5 +218,5 @@ void loop() {
   // lc.setIntensity(0, Intensity);
   // singledots();
   //}
-  intensity(); 
+  //intensity(); 
 }
