@@ -7,9 +7,9 @@ const int SamplingFrequency = 20000;
 class COscillator
 {
   public:
-    COscillator(int Pin);
+    COscillator();
 
-    void Begin();
+    void Begin(int Pin);
     void SetPeriod(int Period);
     void Update();
   private:
@@ -18,15 +18,16 @@ class COscillator
     int m_Period;
 };
 
-COscillator::COscillator(int Pin)
- : m_Pin(Pin)
+COscillator::COscillator()
+ : m_Pin(-1)
  , m_Phase(0)
  , m_Period(1) 
 {
 }
 
-void COscillator::Begin()
+void COscillator::Begin(int Pin)
 {
+    m_Pin = Pin;
     pinMode(m_Pin, OUTPUT);
 }
 
@@ -43,13 +44,16 @@ void COscillator::Update()
   digitalWrite(m_Pin, OutputOn); 
 }
 
-COscillator Oscillator(OutPin);
-COscillator Oscillator2(OutPin-2);
+const int NumOscillators = 4;
+
+COscillator Oscillator[NumOscillators];
 
 void myHandler()
 {
-  Oscillator.Update();
-  Oscillator2.Update();
+  for(int idx = 0; idx<NumOscillators; ++idx)
+  {
+    Oscillator[idx].Update();
+  }
 }
 
 int CalcPeriod(int FrequencyMilliHz)
@@ -59,10 +63,11 @@ int CalcPeriod(int FrequencyMilliHz)
 
 void setup()
 {
-  Oscillator.Begin();
-  Oscillator2.Begin();
-  Oscillator.SetPeriod(CalcPeriod(250000));
-  Oscillator2.SetPeriod(CalcPeriod(250000));
+  for(int idx = 0; idx<NumOscillators; ++idx)
+  {
+    Oscillator[idx].Begin(OutPin-2*idx);
+    Oscillator[idx].SetPeriod(CalcPeriod(250000));
+  }
   
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000*1000/SamplingFrequency;
@@ -72,10 +77,12 @@ void setup()
 void loop()
 {
   int FrequencyHz = 60;
-  for(int DetuneMilliHz = 1; DetuneMilliHz <= 1000; DetuneMilliHz+= 50)
+  for(int DetuneMilliHz = 1; DetuneMilliHz <= 2000; DetuneMilliHz+= 50)
   {
-    Oscillator.SetPeriod(CalcPeriod(FrequencyHz*1000+DetuneMilliHz));
-    Oscillator2.SetPeriod(CalcPeriod(FrequencyHz*1000-DetuneMilliHz));
+    for(int idx = 0; idx<NumOscillators; ++idx)
+    {
+      Oscillator[idx].SetPeriod(CalcPeriod((1+idx/2)*FrequencyHz*1000+idx*DetuneMilliHz));
+    }
     delay(1000);
   }  
 }
