@@ -52,17 +52,17 @@ void myHandler()
   Oscillator2.Update();
 }
 
-int CalcPeriod(int Frequency)
+int CalcPeriod(int FrequencyMilliHz)
 {
-  return SamplingFrequency/Frequency;
+  return SamplingFrequency*1000/FrequencyMilliHz;
 }
 
 void setup()
 {
   Oscillator.Begin();
   Oscillator2.Begin();
-  Oscillator.SetPeriod(CalcPeriod(250));
-  Oscillator2.SetPeriod(CalcPeriod(250));
+  Oscillator.SetPeriod(CalcPeriod(250000));
+  Oscillator2.SetPeriod(CalcPeriod(250000));
   
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000*1000/SamplingFrequency;
@@ -71,10 +71,10 @@ void setup()
 
 void loop()
 {
-  for(int Frequency = 60; Frequency<61; ++Frequency)
+  for(int FrequencyHz = 60; FrequencyHz<61; ++FrequencyHz)
   {
-    Oscillator.SetPeriod(CalcPeriod(Frequency));
-    Oscillator2.SetPeriod(CalcPeriod(2*Frequency+1));
+    Oscillator.SetPeriod(CalcPeriod(FrequencyHz*1000));
+    Oscillator2.SetPeriod(CalcPeriod(2*FrequencyHz*1000+1));
     delay(1000);
   }  
 }
