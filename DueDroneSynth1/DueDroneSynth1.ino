@@ -71,10 +71,11 @@ void setup()
 
 void loop()
 {
-  for(int FrequencyHz = 60; FrequencyHz<61; ++FrequencyHz)
+  int FrequencyHz = 60;
+  for(int DetuneMilliHz = 1; DetuneMilliHz <= 1000; DetuneMilliHz+= 50)
   {
-    Oscillator.SetPeriod(CalcPeriod(FrequencyHz*1000));
-    Oscillator2.SetPeriod(CalcPeriod(2*FrequencyHz*1000+1));
+    Oscillator.SetPeriod(CalcPeriod(FrequencyHz*1000+DetuneMilliHz));
+    Oscillator2.SetPeriod(CalcPeriod(FrequencyHz*1000-DetuneMilliHz));
     delay(1000);
   }  
 }
