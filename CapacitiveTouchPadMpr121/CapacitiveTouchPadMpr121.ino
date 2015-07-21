@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include "CapacitiveTouchPad.h"
 
-int IrqPin = 2;  // Digital 2
+int IrqPin = 8;  // Digital 2
 boolean touchStates[12]; //to keep track of the previous touch states
 
 CCapacitiveTouchPad TouchPad;
@@ -13,10 +13,12 @@ void setup()
     touchStates[idx] = false;
   }
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   //Wire.begin();
 
-  TouchPad.Begin(IrqPin, 0x5A);
+  Serial.println("Capacitive Touchpad...");
+
+  TouchPad.Begin(IrqPin);//, 0x60, 0x80);
 }
 
 void loop()
