@@ -6,9 +6,17 @@
 class CCapacitiveTouchPad
 {
 public:
+    static const uint8_t DefaultAddress = 0x5A;
+    static const uint8_t DefaultTouchThreshold = 0x06;
+    static const uint8_t DefaultReleaseThreshold = 0x0A;
+
     CCapacitiveTouchPad();
 
-    void Begin(int IrqPin, uint8_t Address = 0x5A);
+    void Begin(int IrqPin,
+                uint8_t TouchThreshold = DefaultTouchThreshold,
+                uint8_t ReleaseThreadhold = DefaultReleaseThreshold,
+                uint8_t Address = DefaultAddress);
+    // TODO return true/false upon I2C device found or not !
 
     void Read();
     int GetNumPads() const;
