@@ -1,5 +1,5 @@
 
-const int BuzzerPin = 8;
+const int BuzzerPin = 7;
 
 void setup()
 {
