@@ -275,17 +275,20 @@ class COscillator
 
     void Begin(int Pin);
     void SetPeriod(int Period);
+    void SetAmplitude(int Amplitude);
     void Update();
   private:
     int m_Pin;
     int m_Phase;
     int m_Period;
+    int m_Amplitude;// 0 or 1
 };
 
 COscillator::COscillator()
  : m_Pin(-1)
  , m_Phase(0)
  , m_Period(1) 
+ , m_Amplitude(1)
 {
 }
 
@@ -300,11 +303,16 @@ void COscillator::SetPeriod(int Period)
   m_Period = Period;
 }
 
+void COscillator::SetAmplitude(int Amplitude)
+{
+  m_Amplitude = Amplitude;
+}
+
 void COscillator::Update()
 {
   m_Phase++;
   m_Phase = m_Phase<m_Period ? m_Phase : 0;
-  int OutputOn = m_Phase<m_Period/2 ? HIGH : LOW;
+  int OutputOn = (0<m_Amplitude && m_Phase<m_Period/2) ? HIGH : LOW;
   digitalWrite(m_Pin, OutputOn); 
 }
 
@@ -331,8 +339,11 @@ void setup()
   
   for(int idx = 0; idx<NumOscillators; ++idx)
   {
-    Oscillator[idx].Begin(OutPin-2*idx);
-    Oscillator[idx].SetPeriod(CalcPeriod(250000));
+    int OscOutPin = OutPin-2*idx;
+    Oscillator[idx].Begin(OscOutPin);
+    Oscillator[idx].SetPeriod(CalcPeriod(250000));//250 Hz
+    int GateInPin = OscOutPin-1;
+    pinMode(GateInPin, INPUT);
   }
   
   Timer3.attachInterrupt(myHandler);
@@ -342,19 +353,15 @@ void setup()
 
 void loop()
 {
-  int FrequencyHz = 40; // base/lowest frequency
-//  for(int DetuneMilliHz = 1; DetuneMilliHz <= 2000; DetuneMilliHz+= 50)
-//  {
-//    for(int idx = 0; idx<NumOscillators; ++idx)
-//    {
-//      Oscillator[idx].SetPeriod(CalcPeriod((1+idx/2)*FrequencyHz*1000+idx*DetuneMilliHz));
-//    }
-//    delay(1000);
-//  }  
+  const int FrequencyHz = 40; // base/lowest frequency
   for(int Repeat = 0; Repeat<500; ++Repeat)
   {
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
+      //
+      int GateInPin = OutPin-2*idx-1;
+      int Amplitude = digitalRead(GateInPin);
+      Oscillator[idx].SetAmplitude(Amplitude);
       //
       int Value = (analogRead(A0+idx)/8)%256;
       int FreqMult = FrequencyMultipliers[Value];
