@@ -6,7 +6,7 @@ const int SamplingFrequency = 20000;
 
 const int FrequencyMultiplierScale = 1000;
 
-const int FrequencyMultipliers[] = {
+const int FrequencyMultipliers_4x64[] = {
 1000,
 1011,
 1022,
@@ -336,7 +336,9 @@ int CalcPeriod(int FrequencyMilliHz)
 void setup()
 {
   Serial.begin(115200);
-  
+  Serial.println("DroneSynth...");
+
+  analogReadResolution(8);
   for(int idx = 0; idx<NumOscillators; ++idx)
   {
     int OscOutPin = OutPin-2*idx;
@@ -344,6 +346,8 @@ void setup()
     Oscillator[idx].SetPeriod(CalcPeriod(250000));//250 Hz
     int GateInPin = OscOutPin-1;
     pinMode(GateInPin, INPUT);
+    int CVInPin = A0+idx;
+    pinMode(CVInPin, INPUT);    
   }
   
   Timer3.attachInterrupt(myHandler);
@@ -353,7 +357,7 @@ void setup()
 
 void loop()
 {
-  const int FrequencyHz = 40; // base/lowest frequency
+  const int BaseFrequencyMilliHz = 40 * 1000; // base/lowest frequency
   for(int Repeat = 0; Repeat<500; ++Repeat)
   {
     for(int idx = 0; idx<NumOscillators; ++idx)
@@ -363,9 +367,10 @@ void loop()
       int Amplitude = digitalRead(GateInPin);
       Oscillator[idx].SetAmplitude(Amplitude);
       //
-      int Value = (analogRead(A0+idx)/8)%256;
-      int FreqMult = FrequencyMultipliers[Value];
-      int OscillatorFrequencyMilliHz = FrequencyHz * FreqMult * 1000 / FrequencyMultiplierScale;
+      int CVInPin = A0 + idx;
+      int Value = analogRead(CVInPin)%256;
+      int FreqMult = FrequencyMultipliers_4x64[Value];
+      int OscillatorFrequencyMilliHz = BaseFrequencyMilliHz * FreqMult / FrequencyMultiplierScale;
       //
       Oscillator[idx].SetPeriod(CalcPeriod(OscillatorFrequencyMilliHz));
       // debug info
@@ -380,7 +385,7 @@ void loop()
         Serial.print(OscillatorFrequencyMilliHz);
         Serial.println();
       }
-        delay(1);//??
+      //delay(1);//??
     }
   }    
 }
