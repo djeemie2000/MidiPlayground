@@ -1385,7 +1385,7 @@ void setup()
 
 void loop()
 {
-  const int BaseFrequencyMilliHz = 160 * 1000; // base frequency, dtune allows for 2 octaves below the base freq
+  const int BaseFrequencyMilliHz = 80 * 1000; // base frequency, detune allows for 2 octaves below the base freq
   for(int Repeat = 0; Repeat<500; ++Repeat)
   {
     // 
@@ -1415,9 +1415,9 @@ void loop()
       Oscillator[idx].SetAmplitude(Amplitude);
       //
       int DetuneCVInPin = A0 + 1 + idx;
-      int DetuneValue = analogRead(CVInPin)%1024;
-      int DetuneMult = FrequencyMultipliers_4x256_signed[Value];
-      int DetunedOscillatorFrequencyMilliHz = OscillatorFrequencyMilliHz * FreqMult / FrequencyMultiplierScale;
+      int DetuneValue = analogRead(DetuneCVInPin)%1024;
+      int DetuneMult = FrequencyMultipliers_4x256_signed[DetuneValue];
+      int DetunedOscillatorFrequencyMilliHz = OscillatorFrequencyMilliHz * DetuneMult / FrequencyMultiplierScale;
       //
       Oscillator[idx].SetPeriod(CalcPeriod(DetunedOscillatorFrequencyMilliHz));
 
@@ -1436,7 +1436,8 @@ void loop()
       }
       
     }
-      //delay(1);//??
+    
+    delay(1);//??
   }    
 }
 
