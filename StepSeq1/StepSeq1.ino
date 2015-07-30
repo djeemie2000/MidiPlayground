@@ -1,3 +1,4 @@
+#include "Wire.h"
 
 const int LedPin = 13;
 bool ClockPulse;
@@ -5,6 +6,31 @@ int CurrentStep;
 const int NumSteps = 4;
 
 const int SelectPin = 8;
+
+const int Pcf8591Address = 0x48;
+
+void InitDAC()
+{
+  Wire.begin();
+  Wire.beginTransmission(Pcf8591Address);
+  uint8_t Error = Wire.endTransmission(Pcf8591Address);
+  if(Error==0)
+  {
+    Serial.println("Found pcf8591");
+  }
+  else
+  {
+    Serial.println("Could not find pcf8591");
+  }
+}
+
+void WriteDAC(int Value)
+{
+  Wire.beginTransmission(Pcf8591Address);
+  Wire.write(0x40);//AOut
+  Wire.write(Value);
+  Wire.endTransmission();
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -18,6 +44,9 @@ void setup() {
   
   CurrentStep = 0;
   ClockPulse = false;
+
+  InitDAC();
+  
   // interrupt upon rising edge of digital input 2 (= interrupt number 0)
   attachInterrupt(0, OnClockPulse, RISING);
 }
@@ -52,6 +81,10 @@ void ApplyStep()
   digitalWrite(SelectPin, 0!=Value0 ? HIGH : LOW);
   digitalWrite(SelectPin+1, 0!=Value1 ? HIGH : LOW);
   digitalWrite(SelectPin+2, 0!=Value2 ? HIGH : LOW);
+
+  int Steps[4] = { 32, 64, 128, 64 };
+  int Value = Steps[CurrentStep];//??
+  WriteDAC(Value);
 
   /*Serial.print(Value0);
   Serial.print(" ");
