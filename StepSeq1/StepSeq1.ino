@@ -150,7 +150,7 @@ void UpdateLeds()
   lc.setLed(MatrixId, GateRow, Column, true);
   
   // one pixel ~CV [0,7]
-  int CVRow = StepValues[CurrentStep]>>6 +1;
+  int CVRow = 1+StepValues[CurrentStep]>>7;
   for(int Row = 1; Row<=CVRow; ++Row)
   {
     lc.setLed(MatrixId, Row, Column, true);
