@@ -9,6 +9,8 @@ const int NumSteps = 8;
 int StepValues[NumSteps];
 
 const int SelectPin = 7;
+const int TriggerOutPin = 6;
+int TriggerOutValue;
 
 const int Pcf8591Address = 0x48;
 
@@ -17,6 +19,46 @@ const int DataPin = 12;
 const int ClockPin = 11;
 const int LoadPin = 10;
 LedControl lc = LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
+
+class CTicker
+{
+  public:
+    CTicker()
+     : m_PeriodMilliSeconds(500)
+     , m_NextTimeMilliSeconds(0)
+     {}
+
+     void SetPeriod(unsigned long PeriodMilliSeconds)
+     {
+      m_PeriodMilliSeconds = PeriodMilliSeconds;
+     }
+
+     void Reset()
+     {
+      m_NextTimeMilliSeconds = 0;
+     }
+
+      // returns true periodically
+     bool Tick()
+     {
+      // init first time => tick returns true
+      if(m_NextTimeMilliSeconds==0)
+      {
+        m_NextTimeMilliSeconds = millis();
+      }
+      if(m_NextTimeMilliSeconds<=millis())
+      {
+        m_NextTimeMilliSeconds += m_PeriodMilliSeconds;
+        return true;
+      }
+      return false;
+     }
+  private:
+    unsigned long m_PeriodMilliSeconds;
+    unsigned long m_NextTimeMilliSeconds;
+};
+
+CTicker Ticker;
 
 void InitSteps()
 {
@@ -75,19 +117,38 @@ void setup() {
   pinMode(SelectPin+2, OUTPUT);
 
   pinMode(A0, INPUT);
+
+  pinMode(TriggerOutPin, OUTPUT);
+  TriggerOutValue = 0;
   
   CurrentStep = 0;
   ClockPulse = false;
 
   InitDAC();
   InitLeds();
+
+  Ticker.Reset();
+  Ticker.SetPeriod(250/2);// as default: 120 bpm = 2 Hz = 500 msec period 
+  // note that toggle trigger pin should happen 2x each period
   
   // interrupt upon rising edge of digital input 2 (= interrupt number 0)
   attachInterrupt(0, OnClockPulse, RISING);
 }
 
+void ToggleTrigger()
+{
+    //toggle trigger
+    TriggerOutValue = 255-TriggerOutValue;
+    digitalWrite(TriggerOutPin, TriggerOutValue);  
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
+  if(Ticker.Tick())
+  {
+    ToggleTrigger();
+  }
+  
   if(ClockPulse)
   {
     AdvanceStep();
