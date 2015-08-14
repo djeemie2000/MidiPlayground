@@ -62,7 +62,7 @@ void WriteDAC(int Value)
 {
   Wire.beginTransmission(Pcf8591Address);
   Wire.write(0x40);//AOut
-  Wire.write(Value);
+  Wire.write(Value>>2);//scale from 10 bits resolution down to 8 bits
   Wire.endTransmission();
 }
 
@@ -98,6 +98,8 @@ void loop() {
 
     UpdateLeds();
 
+    //avoid bouncing?
+    delay(10);
     ClockPulse = false;
   }
 }
@@ -160,7 +162,5 @@ void UpdateLeds()
 void OnClockPulse()
 {
   ClockPulse = true;
-  //avoid bouncing?
-  delay(10);
 }
 
