@@ -4,7 +4,7 @@
 
 int OutPin = 53;
 
-const int SamplingFrequency = 20000;
+const int SamplingFrequency = 40000;
 
 
 
