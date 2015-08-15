@@ -3,14 +3,20 @@
 #include "Ticker.h"
 
 const int LedPin = 13;
+
 bool ClockPulse;
 int CurrentStep;
 const int NumSteps = 8;
 int StepValues[NumSteps];
+int GateOutValues[NumSteps];
 
 const int SelectPin = 7;
 const int TriggerOutPin = 6;
 int TriggerOutValue;
+
+const int GateOutPin = 5;
+const int CVInPin = A0;
+const int StepSpeedInPin = A1;
 
 const int Pcf8591Address = 0x48;
 
@@ -28,6 +34,7 @@ void InitSteps()
   for(int idx=0; idx<NumSteps; ++idx)
   {
     StepValues[idx] = idx*32;
+    GateOutValues[idx] = HIGH;
   }
 }
 
@@ -79,13 +86,18 @@ void setup() {
   pinMode(SelectPin+1, OUTPUT);
   pinMode(SelectPin+2, OUTPUT);
 
-  pinMode(A0, INPUT);
+  pinMode(CVInPin, INPUT);
+  pinMode(StepSpeedInPin, INPUT);
 
   pinMode(TriggerOutPin, OUTPUT);
   TriggerOutValue = 0;
 
+  pinMode(GateOutPin, OUTPUT);
+  digitalWrite(GateOutPin, HIGH);
+  
   CurrentStep = 0;
   ClockPulse = false;
+  InitSteps();
 
   InitDAC();
   InitLeds();
@@ -105,12 +117,20 @@ void ToggleTrigger()
     digitalWrite(TriggerOutPin, TriggerOutValue);
 }
 
+void UpdateStepSpeed()
+{
+  int Value = analogRead(StepSpeedInPin);
+  Ticker.SetPeriod((1+Value)*8);//[8 msec, 8192 msec]
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
   if(Ticker.Tick()==CTicker::TickOn)
   {
     ToggleTrigger();
   }
+
+  UpdateStepSpeed();
 
   if(ClockPulse)
   {
@@ -145,10 +165,13 @@ void ApplyStep()
   digitalWrite(SelectPin+1, 0!=Value1 ? HIGH : LOW);
   digitalWrite(SelectPin+2, 0!=Value2 ? HIGH : LOW);
   // read analog value from analog input pin
-  StepValues[CurrentStep] = analogRead(A0);
+  StepValues[CurrentStep] = analogRead(CVInPin);
 
   // write to DAC
   WriteDAC(StepValues[CurrentStep]);
+
+  // gate
+  digitalWrite(GateOutPin, GateOutValues[CurrentStep]);
 
   /*Serial.print(Value0);
   Serial.print(" ");
@@ -161,7 +184,9 @@ void ApplyStep()
 void LogStep()
 {
   int Value = StepValues[CurrentStep];
-  Serial.print("Value=");
+  Serial.print("Gate=");
+  Serial.print(GateOutValues[CurrentStep]);
+  Serial.print(" Value=");
   Serial.println(Value);
 }
 
