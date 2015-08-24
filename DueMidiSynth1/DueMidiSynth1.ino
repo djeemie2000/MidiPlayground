@@ -2,6 +2,7 @@
 #include "Oscillator.h"
 #include "FrequencyMultipliers.h"
 #include "MidiNoteFrequencies.h"
+#include "MidiCC.h"
 
 // oscillator globals:
 int OutPin = 53;
@@ -14,6 +15,8 @@ COscillator Oscillator[NumOscillators];
 // midi globals
 int CurrMidiNote;
 int CurrAmplitude;
+CMidiCC MidiCC;
+const int DetuneCC = 74;
 
 // helper functions:
 void myHandler()
@@ -42,17 +45,21 @@ void setup()
   analogReadResolution(10);
 
   const int DefaultMidiNote = 45;//A1 110 Hz
+
+  CurrMidiNote = DefaultMidiNote;
+  CurrAmplitude = 1;
+
   const int DefaultOscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(DefaultMidiNote);
   for (int idx = 0; idx < NumOscillators; ++idx)
   {
     int OscOutPin = OutPin - 2 * idx;
     Oscillator[idx].Begin(OscOutPin);
     Oscillator[idx].SetPeriod(CalcPeriod(DefaultOscillatorFrequencyMilliHz));
-    Oscillator[idx].SetAmplitude(1);//TODO zero
+    Oscillator[idx].SetAmplitude(0);
+    
+    MidiCC.SetController(DetuneCC+idx, 64);//default to mid range
   }
 
-  CurrMidiNote = DefaultMidiNote;
-  CurrAmplitude = 1;
 
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
@@ -78,7 +85,8 @@ void ApplyOscillatorParameters()
     int Amplitude = CurrAmplitude;//TODO midi note on/off
     Oscillator[idx].SetAmplitude(Amplitude);
     //
-    int DetuneValue = 512;//TODO midi cc
+    // scale midi cc [0,127], detune value[0, 1023]
+    int DetuneValue = MidiCC.GetController(DetuneCC+idx)*8;
     int DetuneMult = FrequencyMultipliers_4x256_signed[DetuneValue];
     int DetunedOscillatorFrequencyMilliHz = OscillatorFrequencyMilliHz * DetuneMult / FrequencyMultiplierScale;
     //
@@ -144,12 +152,14 @@ void loop()
     }
     else if (RawMidiInBuffer[0] == 0xB0)
     {
-      //TODO
+      int CC = RawMidiInBuffer[1];
+      int Value = RawMidiInBuffer[2];
+      MidiCC.SetController(CC, Value);
       // debug:
       Serial.print("CC ");
-      Serial.print(RawMidiInBuffer[1]);//controller
+      Serial.print(CC);//controller
       Serial.print(" (");
-      Serial.print(RawMidiInBuffer[2]);//value
+      Serial.print(Value);//value
       Serial.println(")");
     }
     else
