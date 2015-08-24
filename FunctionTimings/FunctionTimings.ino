@@ -136,6 +136,44 @@ void TimingSerial()
   Serial.println(" msec");
 }
 
+void TimingFloatOperations()
+{
+  const int NumRepeats = 10000;
+  unsigned long Before = millis();
+  float Tmp = 1.0f;
+  for(int Repeat = 0; Repeat<NumRepeats; ++Repeat)
+  {
+     Tmp = (Tmp + 1)*1.5f; 
+  }
+  unsigned long After = millis();
+  unsigned long Duration = After-Before;
+  
+  Serial.print("Float mult/add x ");
+  Serial.print(NumRepeats);
+  Serial.print(" = ");
+  Serial.print(Duration);
+  Serial.println(" msec");
+}
+
+void TimingFloatConversions()
+{
+  const int NumRepeats = 10000;
+  unsigned long Before = millis();
+  float Tmp = 3.789f;
+  for(int Repeat = 0; Repeat<NumRepeats; ++Repeat)
+  {
+     int Tmp2 = Tmp*2048;
+     Tmp2 += 2048; 
+  }
+  unsigned long After = millis();
+  unsigned long Duration = After-Before;
+  
+  Serial.print("Float conversion x ");
+  Serial.print(NumRepeats);
+  Serial.print(" = ");
+  Serial.print(Duration);
+  Serial.println(" msec");
+}
 
 void loop()
 {
