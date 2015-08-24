@@ -16,7 +16,7 @@ COscillator Oscillator[NumOscillators];
 int CurrMidiNote;
 int CurrAmplitude;
 CMidiCC MidiCC;
-const int DetuneCC = 74;
+const int DetuneCC = 72;
 
 // helper functions:
 void myHandler()
@@ -36,7 +36,7 @@ void setup()
 {
   // use Serial as debug output
   Serial.begin(115200);
-  Serial.println("DroneSynth...");
+  Serial.println("MidiSynth...");
 
   // use serial1 as midi input
   // for now, use serial usb cable => baudrate is not 31250
@@ -125,6 +125,14 @@ void loop()
   {
     byte RawMidiInBuffer[RawMidiInSize];
     Serial1.readBytes(RawMidiInBuffer, RawMidiInSize);
+
+    Serial.print("Recieved 0x");
+    Serial.print(RawMidiInBuffer[0], HEX);
+    Serial.print(" 0x");
+    Serial.print(RawMidiInBuffer[1], HEX);
+    Serial.print(" 0x");
+    Serial.print(RawMidiInBuffer[2], HEX);
+    Serial.println();
 
     bool Change = true;
     if (RawMidiInBuffer[0] == 0x80)
