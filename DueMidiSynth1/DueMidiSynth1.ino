@@ -47,7 +47,7 @@ void setup()
   const int DefaultMidiNote = 45;//A1 110 Hz
 
   CurrMidiNote = DefaultMidiNote;
-  CurrAmplitude = 1;
+  CurrAmplitude = 0;
 
   const int DefaultOscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(DefaultMidiNote);
   for (int idx = 0; idx < NumOscillators; ++idx)
@@ -82,7 +82,7 @@ void ApplyOscillatorParameters()
   for (int idx = 0; idx < NumOscillators; ++idx)
   {
     //
-    int Amplitude = CurrAmplitude;//TODO midi note on/off
+    int Amplitude = 0<CurrAmplitude ? 1 : 0;
     Oscillator[idx].SetAmplitude(Amplitude);
     //
     // scale midi cc [0,127], detune value[0, 1023]
@@ -137,7 +137,10 @@ void loop()
     bool Change = true;
     if (RawMidiInBuffer[0] == 0x80)
     { //note off
-      CurrAmplitude = 0;
+      if(0<CurrAmplitude)
+      {
+        --CurrAmplitude;
+      }
       // debug:
       Serial.print("Note Off ");
       Serial.print(RawMidiInBuffer[1]);//note
@@ -147,7 +150,7 @@ void loop()
     }
     else if (RawMidiInBuffer[0] == 0x90)
     { // note on
-      CurrAmplitude = 1;
+      ++CurrAmplitude;
       CurrMidiNote = RawMidiInBuffer[1];
       // ignore velocity
       // debug:
