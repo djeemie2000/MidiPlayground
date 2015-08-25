@@ -27,13 +27,17 @@ int CurrMidiNote;
 int CurrAmplitude;
 CMidiCC MidiCC;
 const int DetuneCC = 72;
+const int PWMDepthCC = 91;
+const int LFOFrequencyCC = 79;
+const float DefaultLFOFrequency = 0.5f;
 
 // helper functions:
 void myHandler()
 {
   // update LFO
   float LFOValue = LFOOperator(LFOPhaseAccumulator(LFOPhaseStep()));
-  int PulseWidthValue = 128+64*LFOValue;
+  int PWMDepth = MidiCC.GetController(PWMDepthCC);
+  int PulseWidthValue = 128+PWMDepth*LFOValue;
   // update oscillators
   for (int idx = 0; idx < NumOscillators; ++idx)
   {
@@ -75,7 +79,9 @@ void setup()
     MidiCC.SetController(DetuneCC+idx, 64);//default to mid range
   }
 
-  LFOPhaseStep.SetFrequency(0.5f);//
+  LFOPhaseStep.SetFrequency(DefaultLFOFrequency);
+  MidiCC.SetController(PWMDepthCC, 64);//default PWMDepth
+  MidiCC.SetController(LFOFrequencyCC, 64);
 
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
@@ -84,6 +90,10 @@ void setup()
 
 void ApplyOscillatorParameters()
 {
+  //TODO logaritmic scaling
+  float LFOFrequency = MidiCC.GetController(LFOFrequencyCC)*DefaultLFOFrequency/64;
+  LFOPhaseStep.SetFrequency(LFOFrequency);
+  
   int OscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
 
   // debug info
