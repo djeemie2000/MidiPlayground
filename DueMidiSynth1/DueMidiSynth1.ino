@@ -4,6 +4,10 @@
 #include "MidiNoteFrequencies.h"
 #include "MidiCC.h"
 
+#include "PhaseAccumulator.h"
+#include "PhaseStep.h"
+#include "FullPseudoSin.h"
+
 // oscillator globals:
 int OutPin = 53;
 
@@ -11,6 +15,12 @@ const int SamplingFrequency = 40000;
 
 const int NumOscillators = 4;
 COscillator Oscillator[NumOscillators];
+
+// LFO globals:
+CPhaseStep<float> LFOPhaseStep(SamplingFrequency);
+CPhaseAccumulator<float> LFOPhaseAccumulator;
+CFullPseudoSin<float> LFOOperator;
+
 
 // midi globals
 int CurrMidiNote;
@@ -21,8 +31,13 @@ const int DetuneCC = 72;
 // helper functions:
 void myHandler()
 {
+  // update LFO
+  float LFOValue = LFOOperator(LFOPhaseAccumulator(LFOPhaseStep()));
+  int PulseWidthValue = 128+64*LFOValue;
+  // update oscillators
   for (int idx = 0; idx < NumOscillators; ++idx)
   {
+    Oscillator[idx].SetPulseWidth(PulseWidthValue);
     Oscillator[idx].Update();
   }
 }
@@ -44,7 +59,7 @@ void setup()
 
   analogReadResolution(10);
 
-  const int DefaultMidiNote = 45;//A1 110 Hz
+  const int DefaultMidiNote = 45;// note A1 = 110 Hz
 
   CurrMidiNote = DefaultMidiNote;
   CurrAmplitude = 0;
@@ -60,6 +75,7 @@ void setup()
     MidiCC.SetController(DetuneCC+idx, 64);//default to mid range
   }
 
+  LFOPhaseStep.SetFrequency(0.5f);//
 
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
