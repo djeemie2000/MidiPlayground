@@ -25,8 +25,8 @@ void MCPDACClass::begin()
 
 void MCPDACClass::begin(unsigned int cspin)
 {
-	this->ldac = false;
 	this->begin(cspin,0);
+	this->ldac = false;
 }
 
 void MCPDACClass::begin(unsigned int cspin, unsigned int ldacpin)
