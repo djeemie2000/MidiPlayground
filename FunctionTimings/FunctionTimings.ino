@@ -138,7 +138,7 @@ void TimingSerial()
 
 void TimingFloatOperations()
 {
-  const int NumRepeats = 10000;
+  const int NumRepeats = 100000;
   unsigned long Before = millis();
   float Tmp = 1.0f;
   for(int Repeat = 0; Repeat<NumRepeats; ++Repeat)
@@ -147,6 +147,8 @@ void TimingFloatOperations()
   }
   unsigned long After = millis();
   unsigned long Duration = After-Before;
+
+  Serial.print(Tmp);
   
   Serial.print("Float mult/add x ");
   Serial.print(NumRepeats);
@@ -157,16 +159,19 @@ void TimingFloatOperations()
 
 void TimingFloatConversions()
 {
-  const int NumRepeats = 10000;
+  const int NumRepeats = 100000;
   unsigned long Before = millis();
   float Tmp = 3.789f;
+  int Tmp2 = 0;
   for(int Repeat = 0; Repeat<NumRepeats; ++Repeat)
   {
-     int Tmp2 = Tmp*2048;
+     Tmp2 += Tmp*2048;
      Tmp2 += 2048; 
   }
   unsigned long After = millis();
   unsigned long Duration = After-Before;
+
+  Serial.print(Tmp2);
   
   Serial.print("Float conversion x ");
   Serial.print(NumRepeats);
@@ -180,7 +185,9 @@ void loop()
   //TimingSerial();
   //TimingDigitalRead();
   //TimingDigitalWrite();
-  TimingAnalogRead();
-  TimingAnalogWrite();
+  //TimingAnalogRead();
+  //TimingAnalogWrite();
+  TimingFloatOperations();
+  TimingFloatConversions();
 }
 
