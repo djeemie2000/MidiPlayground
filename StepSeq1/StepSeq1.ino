@@ -143,7 +143,7 @@ void loop() {
     UpdateLeds();
 
     //avoid bouncing?
-    delay(10);
+    //delay(10);
     ClockPulse = false;
   }
 }
