@@ -88,6 +88,27 @@ void TestDacValue()
   }
 }
 
+void TestCalcSpeed()
+{
+  Serial.println("Testing CalcDacValue()...");
+  unsigned long Before = millis();
+  
+  unsigned int DacValue;
+  for(int Repeat = 0; Repeat<SamplingFrequency; ++Repeat)
+  {
+      DacValue += CalcDacValue();
+  }
+
+  unsigned long After = millis();
+  unsigned long Duration = After-Before;
+  
+  Serial.print("Repeat x ");
+  Serial.print(SamplingFrequency);
+  Serial.print("  = ");
+  Serial.print(Duration);
+  Serial.println(" mSec");
+}
+
 unsigned int CalcDacValue()
 {
   float OscillatorValue = g_KarplusStrong(g_Trigger,
@@ -158,6 +179,10 @@ void ApplyOscillatorParameters()
 void loop()
 {
 //    TestDacValue();
+//  while(true)
+//  {
+//    TestCalcSpeed();
+//  }
   
   //Serial.print("L");
   if(SamplingFrequency*2<=g_InteruptCounter)
