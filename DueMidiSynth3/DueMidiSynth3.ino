@@ -3,7 +3,7 @@
 
 #include "MidiNoteFrequencies.h"
 #include "MidiCC.h"
-
+#include "DueMcpDac.h"
 #include "OnePoleFilter.h"
 #include "Noise.h"
 #include "KarplusStrong.h"
@@ -12,23 +12,23 @@
 // oscillator globals:
 int OutPin = 53;
 
-const int PIN_CS = 10;
-const int GAIN_1 = 0x1;
-const int GAIN_2 = 0x0;
-
-const int SamplingFrequency = 40000;
+const int SamplingFrequency = 10000;
 
 // osillator globals
 float g_OscillatorFrequencyHz;
 float g_ExiterLPFCutOff;
 const int g_ExiterLPFNumPoles = 8;
 CNoise<float> g_Exiter;
-CMultiStageFilter<float, COnePoleLowPassFilter<float>, 8> g_ExiterLPF;
+//CMultiStageFilter<float, COnePoleLowPassFilter<float>, 8> g_ExiterLPF;
+COnePoleLowPassFilter<float> g_ExiterLPF;
+
 float g_KarplusStrongCutOff;
 int g_KarplusStrongNumPoles;
 float g_Trigger;
 CKarplusStrong<float> g_KarplusStrong(SamplingFrequency, 10);//MinFreq
 
+// debugging
+unsigned long g_InteruptCounter;
 
 // midi globals
 int CurrMidiNote;
@@ -40,36 +40,12 @@ void myHandler()
 {
   unsigned int DacValue = CalcDacValue();
   mcp48_setOutput(0, GAIN_1, 0x01, DacValue);
+  ++g_InteruptCounter;
 }
 
 int CalcPeriod(int FrequencyMilliHz)
 {
   return SamplingFrequency * 1000 / FrequencyMilliHz;
-}
-
-void mcp48_begin()
-{
-  SPI.begin(PIN_CS);//can be 4, 10 or ??
-  SPI.setClockDivider(PIN_CS, 4);//DUE: default is 21 corresponding to 4MHz as in AVR
-}
-
-void mcp48_setOutput(unsigned int val)
-{
-  //assuming single channel, gain=2
-  byte lowByte = val & 0xff;
-  byte highByte = ((val >> 8) & 0xff) | 0x10;
-
-  SPI.transfer(PIN_CS, highByte, SPI_CONTINUE);
-  SPI.transfer(PIN_CS, lowByte);
-}
-
-void mcp48_setOutput(byte channel, byte gain, byte shutdown, unsigned int val)
-{
-  byte lowByte = val & 0xff;
-  byte highByte = ((val >> 8) & 0xff) | channel << 7 | gain << 5 | shutdown << 4;
-
-  SPI.transfer(PIN_CS, highByte, SPI_CONTINUE);
-  SPI.transfer(PIN_CS, lowByte);
 }
 
 unsigned int BipolarToMcp(float Value)
@@ -81,16 +57,51 @@ unsigned int BipolarToMcp(float Value)
   return DacValue;
 }
 
+void TestLPF()
+{
+  float t1 = g_Exiter();
+  float t2 = g_ExiterLPFCutOff;
+  float Tmp = g_ExiterLPF(t1, t2);  
+  Serial.print("Test ");
+  Serial.print(t1);
+  Serial.print(" ");
+  Serial.print(t2);
+  Serial.print(" ");
+  Serial.print(Tmp);
+  Serial.println();
+}
+
+void TestDacValue()
+{
+  g_Trigger = 1.0f;
+  while(true)
+  {
+    Serial.print("Test ");
+    unsigned int Tmp = CalcDacValue();
+    Serial.print(Tmp);
+    Serial.println();
+    g_Trigger -= 0.01f;
+    if(g_Trigger<0.0f)
+    {
+      g_Trigger = 1.0f;
+    }
+    delay(100);
+  }
+}
+
 unsigned int CalcDacValue()
 {
-  //float Tmp = g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff);
+  float Tmp = 
+  //g_Exiter();
+  g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff);
 
 //  float Tmp2 = 0.0f;
   float OscillatorValue = g_KarplusStrong(g_Trigger,
                                           g_OscillatorFrequencyHz,
                                           g_KarplusStrongCutOff,
-                                          g_Exiter());//g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff));                                         
+                                          Tmp);//g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff));                                         
   g_Trigger = 0.0f;
+//  OscillatorValue = 0.5f*(OscillatorValue+Tmp);
 
   return BipolarToMcp(OscillatorValue);
 }
@@ -115,14 +126,15 @@ void setup()
   g_OscillatorFrequencyHz = 220.0f;
   g_KarplusStrongCutOff = 0.8f;
   g_ExiterLPFCutOff = 0.65f;
-  g_ExiterLPF.SetStages(2);
+  //g_ExiterLPF.SetStages(1);
   g_ExiterLPF.SetParameter(g_ExiterLPFCutOff);
   mcp48_begin();
 
   MidiCC.SetController(73, g_KarplusStrongCutOff*128-1);
   MidiCC.SetController(75, g_ExiterLPFCutOff*128-1);
 
-
+  g_InteruptCounter = 0;
+  
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
   Timer3.start(SamplingPeriodMicroSeconds);
@@ -144,11 +156,24 @@ void ApplyOscillatorParameters()
 {
   //TODO
   g_ExiterLPFCutOff = (1 + MidiCC.GetController(73)) / 128.0f;
-  g_KarplusStrongCutOff = (1 + MidiCC.GetController(75)) / 128.0f;;
+  g_KarplusStrongCutOff = (1 + MidiCC.GetController(75)) / 128.0f;
+
+  Serial.print("LPF ");
+  Serial.println(g_ExiterLPFCutOff);
 }
 
 void loop()
 {
+//    TestDacValue();
+  
+  //Serial.print("L");
+  if(SamplingFrequency*2<=g_InteruptCounter)
+  {
+    Serial.print(g_InteruptCounter);
+    Serial.print(" t=");
+    Serial.println(millis());
+    g_InteruptCounter = 0;
+  }
   // read midi in -> read something or read nothing
   // if note on/off, change curr amplitide, note
   // apply curr only when changed
