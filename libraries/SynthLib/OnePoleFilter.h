@@ -139,7 +139,7 @@ public:
     }
 
 private:
-    FilterType m_Filter[8];
+    FilterType m_Filter[N];
     int m_Stages;
     T m_Feedback;
     T m_PrevOut;

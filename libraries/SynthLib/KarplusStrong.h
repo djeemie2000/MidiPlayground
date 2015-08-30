@@ -59,7 +59,7 @@ private:
     int m_Cntr;
     CDelayLine2<T> m_DelayLine;//used as circular buffer
     CTriggerIn<T> m_Trigger;
-    CMultiStageFilter<float, COnePoleLowPassFilter<float>, 4> m_LPF;
+    CMultiStageFilter<float, COnePoleLowPassFilter<float>, 2> m_LPF;
 };
 
 #endif // KARPLUSSTRONG

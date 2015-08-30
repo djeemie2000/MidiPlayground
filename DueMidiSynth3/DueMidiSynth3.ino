@@ -12,15 +12,14 @@
 // oscillator globals:
 int OutPin = 53;
 
-const int SamplingFrequency = 10000;
+const int SamplingFrequency = 26000;
 
 // osillator globals
 float g_OscillatorFrequencyHz;
 float g_ExiterLPFCutOff;
-const int g_ExiterLPFNumPoles = 8;
+const int g_ExiterLPFNumPoles = 2;
 CNoise<float> g_Exiter;
-//CMultiStageFilter<float, COnePoleLowPassFilter<float>, 8> g_ExiterLPF;
-COnePoleLowPassFilter<float> g_ExiterLPF;
+CMultiStageFilter<float, COnePoleLowPassFilter<float>, g_ExiterLPFNumPoles> g_ExiterLPF;
 
 float g_KarplusStrongCutOff;
 int g_KarplusStrongNumPoles;
@@ -91,17 +90,11 @@ void TestDacValue()
 
 unsigned int CalcDacValue()
 {
-  float Tmp = 
-  //g_Exiter();
-  g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff);
-
-//  float Tmp2 = 0.0f;
   float OscillatorValue = g_KarplusStrong(g_Trigger,
                                           g_OscillatorFrequencyHz,
                                           g_KarplusStrongCutOff,
-                                          Tmp);//g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff));                                         
+                                          g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff));                                         
   g_Trigger = 0.0f;
-//  OscillatorValue = 0.5f*(OscillatorValue+Tmp);
 
   return BipolarToMcp(OscillatorValue);
 }
@@ -126,7 +119,7 @@ void setup()
   g_OscillatorFrequencyHz = 220.0f;
   g_KarplusStrongCutOff = 0.8f;
   g_ExiterLPFCutOff = 0.65f;
-  //g_ExiterLPF.SetStages(1);
+  g_ExiterLPF.SetStages(2);
   g_ExiterLPF.SetParameter(g_ExiterLPFCutOff);
   mcp48_begin();
 
