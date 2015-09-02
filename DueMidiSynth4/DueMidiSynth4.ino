@@ -4,30 +4,14 @@
 #include "MidiNoteFrequencies.h"
 #include "MidiCC.h"
 #include "DueMcpDac.h"
-#include "OnePoleFilter.h"
-#include "Noise.h"
-#include "KarplusStrong.h"
 #include "IntOnePoleFilter.h"
 #include "IntPhaseGenerator.h"
 #include "IntNoise.h"
 
 // oscillator globals:
-int OutPin = 53;
-
 const int SamplingFrequency = 40000;
 
-// osillator globals
-float g_OscillatorFrequencyHz;
-float g_ExiterLPFCutOff;
-const int g_ExiterLPFNumPoles = 2;
-CNoise<float> g_Exiter;
-CMultiStageFilter<float, COnePoleLowPassFilter<float>, g_ExiterLPFNumPoles> g_ExiterLPF;
-COnePoleLowPassFilter<int> g_LPFFloat;
-
-float g_KarplusStrongCutOff;
-int g_KarplusStrongNumPoles;
-float g_Trigger;
-CKarplusStrong<float> g_KarplusStrong(SamplingFrequency, 10);//MinFreq
+//const int g_ExiterLPFNumPoles = 2;
 
 //integer stuff
 CIntegerNoise<12> g_ExiterInt;
@@ -45,7 +29,7 @@ CMidiCC MidiCC;
 // helper functions:
 void myHandler()
 {
-  unsigned int DacValue = CalcLPFNoiseInt();//CalcDacValue();
+  unsigned int DacValue = CalcLPFNoiseInt();
 
   DacValue = 0 < DacValue ? DacValue : 0;
   DacValue = DacValue < 4096 ? DacValue : 4096;
@@ -54,35 +38,12 @@ void myHandler()
   ++g_InteruptCounter;
 }
 
-int CalcPeriod(int FrequencyMilliHz)
-{
-  return SamplingFrequency * 1000 / FrequencyMilliHz;
-}
-
-unsigned int BipolarToMcp(float Value)
-{
-  // conversion + clamping
-  int DacValue = (1 + Value) * 2047; //[-1,1] -> [0,4094[
-  DacValue = 0 < DacValue ? DacValue : 0;
-  DacValue = DacValue < 4096 ? DacValue : 4096;
-  return DacValue;
-}
-
-unsigned int CalcLPFNoiseFloat()
-{
-  float OscillatorValue = g_LPFFloat(g_Exiter());
-  return BipolarToMcp(OscillatorValue);
-}
-
 int CalcLPFNoiseInt()
 {
-  int Noise = g_ExiterInt();//(g_Exiter.Rand()>>20);// [0, u32 max] to [0, 4096] to [-2048, 2048]
-  //Noise -= 2048;
-
+  int Noise = g_ExiterInt();
   int Saw = g_PhaseInt();
-  
   int OscillatorValue = g_LPFInt((Noise+Saw)/2);
-
+  // 'envelope'
   OscillatorValue = 0<CurrAmplitude ? OscillatorValue : 0;
   
   return 2048+OscillatorValue;//TODO function?
@@ -118,20 +79,6 @@ void TestCalcSpeed()
 {
   Serial.println("Testing CalcLPFNoise()...");
   
-//  {
-//    g_LPFFloat.SetParameter(0.65f);
-//    
-//    unsigned long Before = millis();
-//    unsigned int DacValue;
-//    for(int Repeat = 0; Repeat<SamplingFrequency; ++Repeat)
-//    {
-//        DacValue += CalcLPFNoiseFloat();
-//    }
-//
-//    unsigned long After = millis();
-//    LogSpeedTest(SamplingFrequency, Before, After);  
-//  }
-
   {
     g_LPFInt.SetParameter(168);
 
@@ -145,17 +92,6 @@ void TestCalcSpeed()
     unsigned long After = millis();
     LogSpeedTest(SamplingFrequency, Before, After);  
   }
-}
-
-unsigned int CalcDacValue()
-{
-  float OscillatorValue = g_KarplusStrong(g_Trigger,
-                                          g_OscillatorFrequencyHz,
-                                          g_KarplusStrongCutOff,
-                                          g_ExiterLPF(g_Exiter(), g_ExiterLPFCutOff));                                         
-  g_Trigger = 0.0f;
-
-  return BipolarToMcp(OscillatorValue);
 }
 
 void setup()
@@ -175,25 +111,23 @@ void setup()
   CurrMidiNote = DefaultMidiNote;
   CurrAmplitude = 0;
 
-  g_OscillatorFrequencyHz = 220.0f;
-  g_KarplusStrongCutOff = 0.8f;
-  g_ExiterLPFCutOff = 0.65f;
-  g_ExiterLPF.SetStages(2);
-  g_ExiterLPF.SetParameter(g_ExiterLPFCutOff);
   mcp48_begin();
 
-  MidiCC.SetController(73, g_KarplusStrongCutOff*128-1);
-  MidiCC.SetController(75, g_ExiterLPFCutOff*128-1);
+  MidiCC.SetController(73, 64);
 
-  g_LPFInt.SetParameter(MidiCC.GetController(73));
+  g_LPFInt.SetParameter((1+MidiCC.GetController(73))*2);
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
   g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
-  Serial.print("Freq= ");
-  Serial.print(FreqMilliHz);
-  Serial.print(" Phase= ");
-  Serial.println(g_PhaseInt.GetPhaseStep());
+  
+  //Serial.print("Freq= ");
+  //Serial.print(FreqMilliHz);
+  //Serial.print(" Phase= ");
+  //Serial.println(g_PhaseInt.GetPhaseStep());
 
   g_InteruptCounter = 0;
+
+  // always show current processing speed
+  TestCalcSpeed();
   
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
@@ -203,38 +137,30 @@ void setup()
 void OnNoteOn()
 {
   int OscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
-  g_OscillatorFrequencyHz = OscillatorFrequencyMilliHz * 0.001f;
-  g_Trigger = 1.0f;
   g_PhaseInt.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz);
   g_PhaseInt.Sync();
 }
 
 void OnNoteOff()
 {
-
+  if (0 < CurrAmplitude)
+  {
+    --CurrAmplitude;
+  }
 }
 
 void ApplyOscillatorParameters()
 {
   //TODO
-  g_ExiterLPFCutOff = (1 + MidiCC.GetController(73)) / 128.0f;
-  g_KarplusStrongCutOff = (1 + MidiCC.GetController(75)) / 128.0f;
-  g_LPFFloat.SetParameter(g_ExiterLPFCutOff);
-  g_LPFInt.SetParameter(2*(1+MidiCC.GetController(73)));
+  int ExiterLPFCutOff = (1 + MidiCC.GetController(73))*2;
+  g_LPFInt.SetParameter(ExiterLPFCutOff);
 
   Serial.print("LPF ");
-  Serial.println(g_ExiterLPFCutOff);
+  Serial.println(ExiterLPFCutOff);
 }
 
 void loop()
 {
-  //while(true)
-  //{
-  //  TestCalcSpeed();
-  //}
-  //TestLPFNoiseInt();
-  
-  //Serial.print("L");
   if(SamplingFrequency*2<=g_InteruptCounter)
   {
     Serial.print(g_InteruptCounter);
@@ -269,10 +195,6 @@ void loop()
     bool Change = true;
     if (RawMidiInBuffer[0] == 0x80)
     { //note off
-      if (0 < CurrAmplitude)
-      {
-        --CurrAmplitude;
-      }
       OnNoteOff();
       // debug:
       Serial.print("Note Off ");
