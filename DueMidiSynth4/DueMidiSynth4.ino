@@ -9,6 +9,7 @@
 #include "KarplusStrong.h"
 #include "IntOnePoleFilter.h"
 #include "IntPhaseGenerator.h"
+#include "IntNoise.h"
 
 // oscillator globals:
 int OutPin = 53;
@@ -29,7 +30,7 @@ float g_Trigger;
 CKarplusStrong<float> g_KarplusStrong(SamplingFrequency, 10);//MinFreq
 
 //integer stuff
-CNoise<int> g_ExiterInt;
+CIntegerNoise<12> g_ExiterInt;
 CIntegerOnePoleLowPassFilter<int, 8> g_LPFInt(0);
 CIntegerPhaseGenerator<12> g_PhaseInt(0);
 
@@ -75,8 +76,8 @@ unsigned int CalcLPFNoiseFloat()
 
 int CalcLPFNoiseInt()
 {
-  int Noise = (g_Exiter.Rand()>>20);// [0, u32 max] to [0, 4096] to [-2048, 2048]
-  Noise -= 2048;
+  int Noise = g_ExiterInt();//(g_Exiter.Rand()>>20);// [0, u32 max] to [0, 4096] to [-2048, 2048]
+  //Noise -= 2048;
 
   int Saw = g_PhaseInt();
   
@@ -196,7 +197,7 @@ void setup()
   
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
-  //Timer3.start(SamplingPeriodMicroSeconds);
+  Timer3.start(SamplingPeriodMicroSeconds);
 }
 
 void OnNoteOn()
@@ -227,10 +228,10 @@ void ApplyOscillatorParameters()
 
 void loop()
 {
-  while(true)
-  {
-    TestCalcSpeed();
-  }
+  //while(true)
+  //{
+  //  TestCalcSpeed();
+  //}
   //TestLPFNoiseInt();
   
   //Serial.print("L");

@@ -4,7 +4,7 @@ template<int Scale = 12>
 class CIntegerNoise
 {
 public:
-    CNoise()
+    CIntegerNoise()
      : m_Random(22222u)
     {
     }
@@ -15,7 +15,7 @@ public:
         return m_Random;
     }
 
-    T operator()()
+    int operator()()
     {
       int Noise = Rand()>>(32-Scale);
       return Noise - (1<<(Scale-1));
@@ -26,7 +26,5 @@ private:
     // http://www.musicdsp.org/showone.php?id=59
     // static unsigned long random = 22222;
     // random = (random * 196314165) + 907633515;
-    // return (float)random * kTwoOverUlongMax - 1.0f;
-    const T m_Multiplier;
     uint32_t m_Random;
 };
