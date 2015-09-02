@@ -8,6 +8,7 @@
 #include "Noise.h"
 #include "KarplusStrong.h"
 #include "IntOnePoleFilter.h"
+#include "IntPhaseGenerator.h"
 
 // oscillator globals:
 int OutPin = 53;
@@ -27,8 +28,10 @@ int g_KarplusStrongNumPoles;
 float g_Trigger;
 CKarplusStrong<float> g_KarplusStrong(SamplingFrequency, 10);//MinFreq
 
+//integer stuff
 CNoise<int> g_ExiterInt;
 CIntegerOnePoleLowPassFilter<int, 8> g_LPFInt(0);
+CIntegerPhaseGenerator<12> g_PhaseInt(0);
 
 // debugging
 unsigned long g_InteruptCounter;
@@ -74,8 +77,13 @@ int CalcLPFNoiseInt()
 {
   int Noise = (g_Exiter.Rand()>>20);// [0, u32 max] to [0, 4096] to [-2048, 2048]
   Noise -= 2048;
-  //return Noise;
-  int OscillatorValue = g_LPFInt(Noise);
+
+  int Saw = g_PhaseInt();
+  
+  int OscillatorValue = g_LPFInt((Noise+Saw)/2);
+
+  OscillatorValue = 0<CurrAmplitude ? OscillatorValue : 0;
+  
   return 2048+OscillatorValue;//TODO function?
 }
 
@@ -109,19 +117,19 @@ void TestCalcSpeed()
 {
   Serial.println("Testing CalcLPFNoise()...");
   
-  {
-    g_LPFFloat.SetParameter(0.65f);
-    
-    unsigned long Before = millis();
-    unsigned int DacValue;
-    for(int Repeat = 0; Repeat<SamplingFrequency; ++Repeat)
-    {
-        DacValue += CalcLPFNoiseFloat();
-    }
-
-    unsigned long After = millis();
-    LogSpeedTest(SamplingFrequency, Before, After);  
-  }
+//  {
+//    g_LPFFloat.SetParameter(0.65f);
+//    
+//    unsigned long Before = millis();
+//    unsigned int DacValue;
+//    for(int Repeat = 0; Repeat<SamplingFrequency; ++Repeat)
+//    {
+//        DacValue += CalcLPFNoiseFloat();
+//    }
+//
+//    unsigned long After = millis();
+//    LogSpeedTest(SamplingFrequency, Before, After);  
+//  }
 
   {
     g_LPFInt.SetParameter(168);
@@ -177,12 +185,18 @@ void setup()
   MidiCC.SetController(75, g_ExiterLPFCutOff*128-1);
 
   g_LPFInt.SetParameter(MidiCC.GetController(73));
+  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
+  g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
+  Serial.print("Freq= ");
+  Serial.print(FreqMilliHz);
+  Serial.print(" Phase= ");
+  Serial.println(g_PhaseInt.GetPhaseStep());
 
   g_InteruptCounter = 0;
   
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
-  Timer3.start(SamplingPeriodMicroSeconds);
+  //Timer3.start(SamplingPeriodMicroSeconds);
 }
 
 void OnNoteOn()
@@ -190,6 +204,8 @@ void OnNoteOn()
   int OscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
   g_OscillatorFrequencyHz = OscillatorFrequencyMilliHz * 0.001f;
   g_Trigger = 1.0f;
+  g_PhaseInt.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz);
+  g_PhaseInt.Sync();
 }
 
 void OnNoteOff()
@@ -211,10 +227,10 @@ void ApplyOscillatorParameters()
 
 void loop()
 {
-  //while(true)
-  //{
-  //  TestCalcSpeed();
-  //}
+  while(true)
+  {
+    TestCalcSpeed();
+  }
   //TestLPFNoiseInt();
   
   //Serial.print("L");
