@@ -7,6 +7,7 @@
 #include "IntOnePoleFilter.h"
 #include "IntPhaseGenerator.h"
 #include "IntNoise.h"
+#include "IntOperators.h" 
 
 // oscillator globals:
 const int SamplingFrequency = 40000;
@@ -14,9 +15,12 @@ const int SamplingFrequency = 40000;
 //const int g_ExiterLPFNumPoles = 2;
 
 //integer stuff
-CIntegerNoise<12> g_ExiterInt;
+static const int IntegerResolution = 12;
+CIntegerNoise<IntegerResolution> g_ExiterInt;
 CIntegerOnePoleLowPassFilter<int, 8> g_LPFInt(0);
-CIntegerPhaseGenerator<12> g_PhaseInt(0);
+CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt(0);
+CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
+
 
 // debugging
 unsigned long g_InteruptCounter;
@@ -42,7 +46,11 @@ int CalcLPFNoiseInt()
 {
   int Noise = g_ExiterInt();
   int Saw = g_PhaseInt();
-  int OscillatorValue = g_LPFInt((Noise+Saw)/2);
+  int SubPhase = g_PhaseIntSub();
+  int Pulse = IntPulse<IntegerResolution>(SubPhase);
+  int Sin = IntFullPseudoSin<IntegerResolution>(Saw);
+  
+  int OscillatorValue = g_LPFInt((Noise+Saw+Pulse+Sin)>>2);
   // 'envelope'
   OscillatorValue = 0<CurrAmplitude ? OscillatorValue : 0;
   
@@ -77,7 +85,7 @@ void LogSpeedTest(int Repeats, unsigned long Before, unsigned long After)
 
 void TestCalcSpeed()
 {
-  Serial.println("Testing CalcLPFNoise()...");
+  Serial.println("Testing speed...");
   
   {
     g_LPFInt.SetParameter(168);
@@ -118,6 +126,7 @@ void setup()
   g_LPFInt.SetParameter((1+MidiCC.GetController(73))*2);
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
   g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
+  g_PhaseIntSub.SetFrequency(SamplingFrequency, FreqMilliHz/2);
   
   //Serial.print("Freq= ");
   //Serial.print(FreqMilliHz);
@@ -139,6 +148,8 @@ void OnNoteOn()
   int OscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
   g_PhaseInt.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz);
   g_PhaseInt.Sync();
+  g_PhaseIntSub.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz/2);
+  g_PhaseIntSub.Sync();
 }
 
 void OnNoteOff()
