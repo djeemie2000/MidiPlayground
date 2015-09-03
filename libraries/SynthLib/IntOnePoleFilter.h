@@ -10,6 +10,12 @@ public:
         , m_B1(0)
     {}
 
+    CIntegerOnePoleLowPassFilter()
+          : m_PrevOut(0)
+          , m_A0(1<<Scale)
+          , m_B1(0)
+      {}
+
     void SetParameter(T Parameter)
     {
         // parameter in [0,1<<N] range
@@ -64,31 +70,30 @@ private:
 //    T m_PrevIn;
 //};
 
-//template<class T, class FilterType, int N>
-//class CMultiStageFilter
-//{
-//public:
-//    CMultiStageFilter()
-//        : m_Filter()
-//        , m_Stages(1)
+template<class T, class FilterType, int N>
+class CIntegerMultiStageFilter
+{
+public:
+    CIntegerMultiStageFilter()
+        : m_Filter()
+        , m_Stages(1)
 //        , m_Feedback(0)
 //        , m_PrevOut(0)
-//    {
-//        m_Filter.fill(FilterType());
-//    }
+    {
+    }
 
-//    void SetStages(int Stages)
-//    {
-//        m_Stages = Stages;
-//    }
+    void SetStages(int Stages)
+    {
+        m_Stages = Stages;
+    }
 
-//    void SetParameter(T Parameter)
-//    {
-//        for(auto& Filter : m_Filter)
-//        {
-//            Filter.SetParameter(Parameter);
-//        }
-//    }
+    void SetParameter(T Parameter)
+    {
+        for(int idx; idx<N; ++idx)
+        {
+            m_Filter[idx].SetParameter(Parameter);
+        }
+    }
 
 //    void SetFeedback(T Feedback)
 //    {
@@ -96,18 +101,19 @@ private:
 //        m_Feedback = Feedback;
 //    }
 
-//    T operator()(T In)
-//    {
-//        T Out = In - m_Feedback*m_PrevOut;
-//        int Stage = 0;
-//        while(Stage<m_Stages)
-//        {
-//            Out = m_Filter[Stage](Out);
-//            ++Stage;
-//        }
+    T operator()(T In)
+    {
+        T Out = In;// - m_Feedback*m_PrevOut;
+        int Stage = 0;
+        while(Stage<m_Stages)
+        {
+            Out = m_Filter[Stage](Out);
+            ++Stage;
+        }
 //        m_PrevOut = Out;//HardLimitSigned(Out);//TODO more efficient?
 //        return m_PrevOut;
-//    }
+          return Out;
+    }
 
 //    T operator()(T In, T Parameter)
 //    {
@@ -135,10 +141,9 @@ private:
 //        return m_PrevOut;
 //    }
 
-//private:
-//    std::array<FilterType, N> m_Filter;
-//    int m_Stages;
+private:
+    FilterType m_Filter[N];
+    int m_Stages;
 //    T m_Feedback;
 //    T m_PrevOut;
-
-//};
+};

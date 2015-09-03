@@ -18,6 +18,7 @@ const int SamplingFrequency = 40000;
 static const int IntegerResolution = 12;
 CIntegerNoise<IntegerResolution> g_ExiterInt;
 CIntegerOnePoleLowPassFilter<int, 8> g_LPFInt(0);
+CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, 4> g_LPFIntMulti; 
 CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt(0);
 CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
 
@@ -50,7 +51,7 @@ int CalcLPFNoiseInt()
   int Pulse = IntPulse<IntegerResolution>(SubPhase);
   int Sin = IntFullPseudoSin<IntegerResolution>(Saw);
   
-  int OscillatorValue = g_LPFInt((Noise+Saw+Pulse+Sin)>>2);
+  int OscillatorValue = g_LPFIntMulti((Noise+Saw+Pulse+Sin)>>2);
   // 'envelope'
   OscillatorValue = 0<CurrAmplitude ? OscillatorValue : 0;
   
@@ -89,6 +90,8 @@ void TestCalcSpeed()
   
   {
     g_LPFInt.SetParameter(168);
+    g_LPFIntMulti.SetParameter(168);
+    g_LPFIntMulti.SetStages(4);
 
     unsigned long Before = millis();
     unsigned int DacValue;
@@ -124,6 +127,9 @@ void setup()
   MidiCC.SetController(73, 64);
 
   g_LPFInt.SetParameter((1+MidiCC.GetController(73))*2);
+  g_LPFIntMulti.SetParameter((1+MidiCC.GetController(73))*2);
+  g_LPFIntMulti.SetStages(4);
+  
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(CurrMidiNote);
   g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
   g_PhaseIntSub.SetFrequency(SamplingFrequency, FreqMilliHz/2);
@@ -165,6 +171,7 @@ void ApplyOscillatorParameters()
   //TODO
   int ExiterLPFCutOff = (1 + MidiCC.GetController(73))*2;
   g_LPFInt.SetParameter(ExiterLPFCutOff);
+  g_LPFIntMulti.SetParameter(ExiterLPFCutOff);
 
   Serial.print("LPF ");
   Serial.println(ExiterLPFCutOff);
