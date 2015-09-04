@@ -12,31 +12,34 @@
 // oscillator globals:
 const int SamplingFrequency = 40000;
 
-const int LPFNumPoles = 4;
+const int LPFNumPoles = 8;
 
 //integer stuff
 static const int IntegerResolution = 12;
-CIntegerNoise<IntegerResolution> g_ExiterInt;
-CIntegerOnePoleLowPassFilter<int, 8> g_LPFInt(0);
+
+const int NumWaveForms = 4;
+IntOperator g_Operators[NumWaveForms] = { IntSawUp<IntegerResolution>,
+                                        IntPulse<IntegerResolution>,
+                                        IntFullPseudoSin<IntegerResolution>,
+                                        IntSemiPseudoSin<IntegerResolution> };
+
+const int NumOperators = 4;
+
+IntOperator g_CurrentOperator[NumOperators];
+
+CIntegerNoise<IntegerResolution> g_NoiseInt;
 CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
 CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt(0);
 CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
 
-const int NumWaveForms = 4;
-IntOperator g_Operators[NumWaveForms] = { IntSawUp<IntegerResolution>,
-                                        IntPulse<IntegerResolution>, 
-                                        IntFullPseudoSin<IntegerResolution>,
-                                        IntSemiPseudoSin<IntegerResolution> };
-
-IntOperator g_CurrentOperator;                                        
 
 
 // debugging
 unsigned long g_InteruptCounter;
 
 // midi globals
-const int LpfMidiCC = 1;//mod wheel 73;
-const int WaveFormMidiCC = 79;
+const int LpfMidiCC = 1;//mod wheel!
+const int WaveFormMidiCC[NumOperators] = { 79, 84, 91, 93 };
 const int SubWaveFormMidiCC = 84;
 
 int g_CurrMidiNote;
@@ -49,8 +52,9 @@ void myHandler()
 {
   unsigned int DacValue = CalcDacValue();//CalcLPFNoiseInt();
 
-  DacValue = 0 < DacValue ? DacValue : 0;
-  DacValue = DacValue < 4096 ? DacValue : 4096;
+  // TODO limit on signed value! now <0 is not possible, but will be a very hight uint value!!!
+  //DacValue = 0 < DacValue ? DacValue : 0;
+  DacValue = DacValue < 4096 ? DacValue : 4095;
 
   mcp48_setOutput(0, GAIN_1, 0x01, DacValue);
   ++g_InteruptCounter;
@@ -58,19 +62,12 @@ void myHandler()
 
 int CalcDacValue()
 {
-  //int Phase = g_PhaseInt();
-  //int SubPhase = g_PhaseIntSub();
-  //int Pulse = IntPulse<IntegerResolution>(SubPhase);
-  //int Sin = IntFullPseudoSin<IntegerResolution>(Phase);
-  //int Wave = g_CurrentOperator(Phase);
-  //int Wave = g_CurrentOperator(Phase);
-
-  int OscillatorValue = g_LPFIntMulti( 
-                                        ( 
-                                          g_CurrentOperator(g_PhaseInt()) 
-                                          + g_CurrentOperator(g_PhaseIntSub())
-                                          )>>1
-                                          );
+  int Phase = g_PhaseInt();
+  int SubPhase = g_PhaseIntSub();
+  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](Phase) + g_CurrentOperator[1](Phase) 
+                                          + g_CurrentOperator[2](SubPhase) + g_CurrentOperator[3](SubPhase)
+                                          )>>2 );
+  
   // 'envelope'
   OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
 
@@ -79,7 +76,7 @@ int CalcDacValue()
 
 int CalcLPFNoiseInt()
 {
-  int Noise = g_ExiterInt();
+  int Noise = g_NoiseInt();
   int Saw = g_PhaseInt();
   int SubPhase = g_PhaseIntSub();
   int Pulse = IntPulse<IntegerResolution>(SubPhase);
@@ -124,7 +121,7 @@ void TestCalcSpeed()
 
   {
     g_LPFIntMulti.SetParameter(168);
-    g_LPFIntMulti.SetStages(4);
+    g_LPFIntMulti.SetStages(LPFNumPoles);
 
     unsigned long Before = millis();
     unsigned int DacValue;
@@ -171,17 +168,21 @@ void setup()
   mcp48_begin();
 
   MidiCC.SetController(LpfMidiCC, 64);
-  MidiCC.SetController(WaveFormMidiCC, 0);
-  
-  g_LPFInt.SetParameter((1+MidiCC.GetController(LpfMidiCC))*2);
+  for(int idx = 0; idx<NumOperators; ++idx)
+  {
+    MidiCC.SetController(WaveFormMidiCC[idx], 0);
+  }
   g_LPFIntMulti.SetParameter((1+MidiCC.GetController(LpfMidiCC))*2);
-  g_LPFIntMulti.SetStages(4);
+  g_LPFIntMulti.SetStages(LPFNumPoles);
 
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
   g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
   g_PhaseIntSub.SetFrequency(SamplingFrequency, FreqMilliHz/2);
 
-  g_CurrentOperator = g_Operators[0];
+  g_CurrentOperator[0] = g_Operators[0];
+  g_CurrentOperator[1] = g_Operators[0];
+  g_CurrentOperator[2] = g_Operators[0];
+  g_CurrentOperator[3] = g_Operators[0];
 
   //Serial.print("Freq= ");
   //Serial.print(FreqMilliHz);
@@ -215,15 +216,17 @@ void OnNoteOff()
   }
 }
 
-void ApplyOscillatorParameters()
+void OnController(int Controller, int Value)
 {
   //TODO
-  int LPFCutOff = MidiCC.GetController(LpfMidiCC)*2;
-  g_LPFInt.SetParameter(LPFCutOff);
+  int LPFCutOff = (1 + MidiCC.GetController(LpfMidiCC))*2;
   g_LPFIntMulti.SetParameter(LPFCutOff);
 
-  int WaveForm = MidiCC.GetController(WaveFormMidiCC)*NumWaveForms/128;//4 types
-  g_CurrentOperator = g_Operators[WaveForm];
+  for(int idx = 0; idx<NumOperators; ++idx)
+  {
+    int WaveForm = MidiCC.GetController(WaveFormMidiCC[idx])*NumWaveForms/128;//4 types
+    g_CurrentOperator[idx] = g_Operators[WaveForm];
+  }
 }
 
 void loop()
@@ -259,7 +262,6 @@ void loop()
     Serial.print(RawMidiInBuffer[2], HEX);
     Serial.println();
 
-    bool Change = true;
     if (RawMidiInBuffer[0] == 0x80)
     { //note off
       OnNoteOff();
@@ -296,11 +298,7 @@ void loop()
       Serial.print(Value);//value
       Serial.println(")");
       //
-      ApplyOscillatorParameters();
-    }
-    else
-    {
-      Change = false;
+      OnController(CC, Value);
     }
   }
 }
