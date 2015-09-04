@@ -1,5 +1,6 @@
 #pragma once
 
+typedef int(*IntOperator)(int);
 
 template<int Scale>
 int IntMaxSigned()
