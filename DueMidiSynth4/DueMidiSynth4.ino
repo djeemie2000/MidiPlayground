@@ -29,8 +29,8 @@ IntOperator g_CurrentOperator[NumOperators];
 
 CIntegerNoise<IntegerResolution> g_NoiseInt;
 CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
-CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt(0);
-CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
+CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt[NumOperators];
+//CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
 
 
 
@@ -62,23 +62,23 @@ void myHandler()
 
 int CalcDacValue()
 {
-  int Phase = g_PhaseInt();
-  int SubPhase = g_PhaseIntSub();
-  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](Phase) + g_CurrentOperator[1](Phase) 
-                                          + g_CurrentOperator[2](SubPhase) + g_CurrentOperator[3](SubPhase)
+  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]()) 
+                                          + g_CurrentOperator[1](g_PhaseInt[1]()) 
+                                          + g_CurrentOperator[2](g_PhaseInt[2]()) 
+                                          + g_CurrentOperator[3](g_PhaseInt[3]())
                                           )>>2 );
   
   // 'envelope'
   OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
-
+  // TODO clamp here!!!
   return IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
 }
 
 int CalcLPFNoiseInt()
 {
   int Noise = g_NoiseInt();
-  int Saw = g_PhaseInt();
-  int SubPhase = g_PhaseIntSub();
+  int Saw = g_PhaseInt[0]();
+  int SubPhase = g_PhaseInt[2]();
   int Pulse = IntPulse<IntegerResolution>(SubPhase);
   int Sin = IntFullPseudoSin<IntegerResolution>(Saw);
 
@@ -172,12 +172,15 @@ void setup()
   {
     MidiCC.SetController(WaveFormMidiCC[idx], 0);
   }
-  g_LPFIntMulti.SetParameter((1+MidiCC.GetController(LpfMidiCC))*2);
+  g_LPFIntMulti.SetParameter(MidiCC.GetController(LpfMidiCC)*2);
   g_LPFIntMulti.SetStages(LPFNumPoles);
 
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
-  g_PhaseInt.SetFrequency(SamplingFrequency, FreqMilliHz);
-  g_PhaseIntSub.SetFrequency(SamplingFrequency, FreqMilliHz/2);
+  for(int idx = 0; idx<NumOperators; ++idx)
+  {
+    int Divider = 1+idx/2;// 1, 2, ...
+    g_PhaseInt[idx].SetFrequency(SamplingFrequency, FreqMilliHz/Divider);
+  }
 
   g_CurrentOperator[0] = g_Operators[0];
   g_CurrentOperator[1] = g_Operators[0];
@@ -201,11 +204,19 @@ void setup()
 
 void OnNoteOn()
 {
-  int OscillatorFrequencyMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
-  g_PhaseInt.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz);
-  g_PhaseInt.Sync();
-  g_PhaseIntSub.SetFrequency(SamplingFrequency, OscillatorFrequencyMilliHz/2);
-  g_PhaseIntSub.Sync();
+  ++g_CurrAmplitude;
+  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
+  for(int idx = 0; idx<NumOperators; ++idx)
+  {
+    int Multiplier = idx%2 ? 255 : 257;//temporary detune TODO!!!
+    int Divider = (1+idx/2)*256;// 1x, 2x, ...
+    g_PhaseInt[idx].SetFrequency(SamplingFrequency, FreqMilliHz*Multiplier/Divider);
+    // sync for first note, continue for following notes (avoids clicks in audio)
+    if(g_CurrAmplitude==1)
+    {
+      g_PhaseInt[idx].Sync();
+    }
+  }
 }
 
 void OnNoteOff()
@@ -274,7 +285,6 @@ void loop()
     }
     else if (RawMidiInBuffer[0] == 0x90)
     { // note on
-      ++g_CurrAmplitude;
       g_CurrMidiNote = RawMidiInBuffer[1];
       // ignore velocity
       OnNoteOn();

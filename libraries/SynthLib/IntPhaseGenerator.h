@@ -5,7 +5,7 @@ template<int Scale = 12>
 class CIntegerPhaseGenerator
 {
 public:
-    CIntegerPhaseGenerator(int Initial)
+    CIntegerPhaseGenerator(int Initial = 0)
         : m_InitialPhase(Initial)
         , m_Phase(Initial)
         , m_PhaseStepUpscaled(1<<Scale)
