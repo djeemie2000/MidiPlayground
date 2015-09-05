@@ -17,11 +17,13 @@ const int LPFNumPoles = 8;
 //integer stuff
 static const int IntegerResolution = 12;
 
-const int NumWaveForms = 4;
+const int NumWaveForms = 6;
 IntOperator g_Operators[NumWaveForms] = { IntSawUp<IntegerResolution>,
                                         IntPulse<IntegerResolution>,
                                         IntFullPseudoSin<IntegerResolution>,
-                                        IntSemiPseudoSin<IntegerResolution> };
+                                        IntSemiPseudoSin<IntegerResolution>,
+                                        IntTriangle<IntegerResolution>,
+                                        IntQuadratic<IntegerResolution>};
 
 const int NumOperators = 4;
 
@@ -39,10 +41,9 @@ unsigned long g_InteruptCounter;
 
 // midi globals
 const int LpfMidiCC = 1;//mod wheel!
-const int WaveFormMidiCC[NumOperators] = { 79, 84, 91, 93 };
+const int WaveFormMidiCC[NumOperators] = { 17, 17, 21, 21 };
 const int SubWaveFormMidiCC = 84;
 
-int g_CurrMidiNote;
 int g_CurrAmplitude;
 CMidiCC MidiCC;
 
@@ -62,12 +63,12 @@ void myHandler()
 
 int CalcDacValue()
 {
-  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]()) 
-                                          + g_CurrentOperator[1](g_PhaseInt[1]()) 
-                                          + g_CurrentOperator[2](g_PhaseInt[2]()) 
+  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]())
+                                          + g_CurrentOperator[1](g_PhaseInt[1]())
+                                          + g_CurrentOperator[2](g_PhaseInt[2]())
                                           + g_CurrentOperator[3](g_PhaseInt[3]())
                                           )>>2 );
-  
+
   // 'envelope'
   OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
   // TODO clamp here!!!
@@ -162,7 +163,6 @@ void setup()
 
   const int DefaultMidiNote = 45;// note A1 = 110 Hz
 
-  g_CurrMidiNote = DefaultMidiNote;
   g_CurrAmplitude = 0;
 
   mcp48_begin();
@@ -175,7 +175,7 @@ void setup()
   g_LPFIntMulti.SetParameter(MidiCC.GetController(LpfMidiCC)*2);
   g_LPFIntMulti.SetStages(LPFNumPoles);
 
-  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
+  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(DefaultMidiNote);
   for(int idx = 0; idx<NumOperators; ++idx)
   {
     int Divider = 1+idx/2;// 1, 2, ...
@@ -202,10 +202,10 @@ void setup()
   Timer3.start(SamplingPeriodMicroSeconds);
 }
 
-void OnNoteOn()
+void OnNoteOn(int MidiNote, int Velocity)
 {
   ++g_CurrAmplitude;
-  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_CurrMidiNote);
+  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(MidiNote);
   for(int idx = 0; idx<NumOperators; ++idx)
   {
     int Multiplier = idx%2 ? 255 : 257;//temporary detune TODO!!!
@@ -273,7 +273,7 @@ void loop()
     Serial.print(RawMidiInBuffer[2], HEX);
     Serial.println();
 
-    if (RawMidiInBuffer[0] == 0x80)
+    if ((RawMidiInBuffer[0]&0xF0) == 0x80)
     { //note off
       OnNoteOff();
       // debug:
@@ -283,11 +283,11 @@ void loop()
       Serial.print(RawMidiInBuffer[2]);//vel
       Serial.println(")");
     }
-    else if (RawMidiInBuffer[0] == 0x90)
+    else if ((RawMidiInBuffer[0]&0xF0) == 0x90)
     { // note on
-      g_CurrMidiNote = RawMidiInBuffer[1];
-      // ignore velocity
-      OnNoteOn();
+      int MidiNote = RawMidiInBuffer[1];
+      int Velocity = RawMidiInBuffer[2];
+      OnNoteOn(MidiNote, Velocity);
       // debug:
       Serial.print("Note On ");
       Serial.print(RawMidiInBuffer[1]);//note
@@ -296,7 +296,7 @@ void loop()
       Serial.println(")");
 
     }
-    else if (RawMidiInBuffer[0] == 0xB0)
+    else if ((RawMidiInBuffer[0]&0xF0) == 0xB0)
     {
       int CC = RawMidiInBuffer[1];
       int Value = RawMidiInBuffer[2];

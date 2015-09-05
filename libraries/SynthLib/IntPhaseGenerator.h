@@ -16,14 +16,25 @@ public:
         m_Phase = m_InitialPhase;
     }
 
-    void SetFrequency(int SamplingFrequency, int FrequencyMilliHz)
+    int CalcPhaseStepUpscaled(int SamplingFrequency, int FrequencyMilliHz)
     {
         float Fs = SamplingFrequency;
         float F = FrequencyMilliHz / 1000.0f;
         float Mult = 1<<16;
         Mult *= Mult;
         float PhaseStep = F * Mult / Fs;
-        m_PhaseStepUpscaled = PhaseStep;
+        return PhaseStep;
+    }
+
+    void SetFrequency(int SamplingFrequency, int FrequencyMilliHz)
+    {
+        // float Fs = SamplingFrequency;
+        // float F = FrequencyMilliHz / 1000.0f;
+        // float Mult = 1<<16;
+        // Mult *= Mult;
+        // float PhaseStep = F * Mult / Fs;
+        // m_PhaseStepUpscaled = PhaseStep;
+        m_PhaseStepUpscaled = CalcPhaseStepUpscaled(SamplingFrequency, FrequencyMilliHz);
     }
 
     void SetPhaseStep(int PhaseStepUpscaled)
@@ -35,6 +46,11 @@ public:
     {
         m_Phase += m_PhaseStepUpscaled;
         return m_Phase>>(32-Scale);
+    }
+
+    int Shifted(int PhaseShift)
+    {
+        return ( m_Phase + (PhaseShift<<(32-Scale)) )>>(32-Scale);
     }
 
     int GetPhaseStep() const

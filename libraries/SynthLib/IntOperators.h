@@ -91,3 +91,9 @@ int IntQuadratic(int Phase)
 {
     return IntSignMultiplier<Scale>(Phase) * IntQuadraticCalc<Scale>(Phase);
 }
+
+template<int Scale>
+int IntTriangle(int Phase)
+{
+  return Phase<0 ?  (1<<(Scale-1)) + (Phase<<1) : (1<<(Scale-1)) - (Phase<<1);
+}
