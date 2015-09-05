@@ -43,6 +43,33 @@ private:
     T m_B1;
 };
 
+template<class T, int Scale>
+class CIntegerFeedbackOperator
+{
+public:
+  CIntegerFeedbackOperator()
+   : m_PrevOut(0)
+   , m_Feedback(0)
+  {}
+
+    void SetFeedback(T Feedback)
+    {
+      // feedback should be in 0, 2^Scale]
+        m_Feedback = Feedback;
+    }
+
+    template<class OperatorType>
+    T operator()(T In, OperatorType& Operator)
+    {
+      m_PrevOut = Operator( ((In<<Scale) - m_Feedback * m_PrevOut) >> Scale );
+      return m_PrevOut;
+    }
+
+private:
+  T m_PrevOut;
+  T m_Feedback;
+};
+
 //template<class T>
 //class COnePoleHighPassFilter
 //{

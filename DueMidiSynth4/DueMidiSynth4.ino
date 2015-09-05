@@ -31,8 +31,8 @@ IntOperator g_CurrentOperator[NumOperators];
 
 CIntegerNoise<IntegerResolution> g_NoiseInt;
 CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
+CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
 CIntegerPhaseGenerator<IntegerResolution> g_PhaseInt[NumOperators];
-//CIntegerPhaseGenerator<IntegerResolution> g_PhaseIntSub(0);
 
 
 
@@ -42,7 +42,8 @@ unsigned long g_InteruptCounter;
 // midi globals
 const int LpfMidiCC = 1;//mod wheel!
 const int WaveFormMidiCC[NumOperators] = { 17, 17, 21, 21 };
-const int SubWaveFormMidiCC = 84;
+const int LpfFeedbackMidiCC = 20;
+//const int SubWaveFormMidiCC = 84;
 
 int g_CurrAmplitude;
 CMidiCC MidiCC;
@@ -63,11 +64,18 @@ void myHandler()
 
 int CalcDacValue()
 {
-  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]())
+//  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]())
+//                                          + g_CurrentOperator[1](g_PhaseInt[1]())
+//                                          + g_CurrentOperator[2](g_PhaseInt[2]())
+//                                          + g_CurrentOperator[3](g_PhaseInt[3]())
+//                                          )>>2 );
+
+  int OscillatorValue = g_FeedbackOperator( ( g_CurrentOperator[0](g_PhaseInt[0]())
                                           + g_CurrentOperator[1](g_PhaseInt[1]())
                                           + g_CurrentOperator[2](g_PhaseInt[2]())
                                           + g_CurrentOperator[3](g_PhaseInt[3]())
-                                          )>>2 );
+                                          )>>2, g_LPFIntMulti );
+
 
   // 'envelope'
   OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
@@ -232,6 +240,8 @@ void OnController(int Controller, int Value)
   //TODO
   int LPFCutOff = (1 + MidiCC.GetController(LpfMidiCC))*2;
   g_LPFIntMulti.SetParameter(LPFCutOff);
+
+  g_FeedbackOperator.SetFeedback(MidiCC.GetController(LpfFeedbackMidiCC)*2);
 
   for(int idx = 0; idx<NumOperators; ++idx)
   {
