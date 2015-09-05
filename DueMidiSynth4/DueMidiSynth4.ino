@@ -52,24 +52,13 @@ CMidiCC MidiCC;
 // helper functions:
 void myHandler()
 {
-  unsigned int DacValue = CalcDacValue();//CalcLPFNoiseInt();
-
-  // TODO limit on signed value! now <0 is not possible, but will be a very hight uint value!!!
-  //DacValue = 0 < DacValue ? DacValue : 0;
-  DacValue = DacValue < 4096 ? DacValue : 4095;
-
+  unsigned int DacValue = CalcDacValue();  //  limit on signed value, not here!
   mcp48_setOutput(0, GAIN_1, 0x01, DacValue);
   ++g_InteruptCounter;
 }
 
 int CalcDacValue()
 {
-//  int OscillatorValue = g_LPFIntMulti( ( g_CurrentOperator[0](g_PhaseInt[0]())
-//                                          + g_CurrentOperator[1](g_PhaseInt[1]())
-//                                          + g_CurrentOperator[2](g_PhaseInt[2]())
-//                                          + g_CurrentOperator[3](g_PhaseInt[3]())
-//                                          )>>2 );
-
   int OscillatorValue = g_FeedbackOperator( ( g_CurrentOperator[0](g_PhaseInt[0]())
                                           + g_CurrentOperator[1](g_PhaseInt[1]())
                                           + g_CurrentOperator[2](g_PhaseInt[2]())
@@ -94,6 +83,15 @@ int CalcLPFNoiseInt()
   int OscillatorValue = g_LPFIntMulti((Noise+Saw+Pulse+Sin)>>2);
   // 'envelope'
   OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
+
+  if(-2048<OscillatorValue)
+  {
+    OscillatorValue = -2048;
+  }
+  else if(2047<OscillatorValue)
+  {
+    OscillatorValue = 2047;
+  }
 
   return 2048+OscillatorValue;//TODO function?
 }
