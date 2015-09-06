@@ -65,6 +65,12 @@ int IntBipolarToUnsigned(int In)
     return (In + (1<<(Scale-1)));
 }
 
+// [0,2] to [-1,1] or [0, 2^N+1] to [-2^N, 2^N]
+template<int Scale>
+int IntUnsignedToBipolar(int In)
+{
+    return (In - (1<<(Scale-1)));
+}
 
 template<int Scale>
 int IntSemiPseudoSin(int Phase)

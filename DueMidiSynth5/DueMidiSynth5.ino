@@ -13,7 +13,7 @@
 #include "IntInterpolator.h"
 
 // oscillator globals:
-const int SamplingFrequency = 32000;//40000;
+const int SamplingFrequency = 40000;//40000;
 
 static const int IntegerResolution = 12;
 
@@ -40,6 +40,7 @@ const int AttackReleaseTimes[] = { 1, 2, 3, 4, 5, 6, 7, 8,
 
 // debugging
 unsigned long g_InteruptCounter;
+unsigned long g_OverflowCounter;
 
 // midi globals
 const int LpfMidiCC = 1;//mod wheel!
@@ -63,19 +64,26 @@ void myHandler()
 uint32_t CalcDacValue()
 {
   uint32_t PhaseScaled = g_PhaseGenerator();//saw up
-  //uint32_t Index = PhaseScaled>>9; // 16 bits to 7 bits
+  int WaveTableValue = g_Interpolation.GetInterpolatedValue(wt2::wav_res_waves + wt2::WaveTableOffset*g_WaveTableIndex, PhaseScaled) <<0;//first wt of first bank, [0,255] to [0,2040]
 
-  //uint32_t OscillatorValue = (wt2::wav_res_waves[wt2::WaveTableOffset*g_WaveTableIndex+Index]) <<4;//first wt of first bank, [0,255] to [0,4096]
-  uint32_t OscillatorValue = g_Interpolation.GetInterpolatedValue(wt2::wav_res_waves + wt2::WaveTableOffset*g_WaveTableIndex, PhaseScaled) <<4;//first wt of first bank, [0,255] to [0,4096]
+  int OscillatorValue = IntUnipolarToBipolar<IntegerResolution>(WaveTableValue);
+  
+  OscillatorValue = g_LPFIntMulti(OscillatorValue);
 
-  OscillatorValue = (0<g_CurrAmplitude) ? OscillatorValue : 2048; 
+  OscillatorValue = (0<g_CurrAmplitude) ? OscillatorValue : 0; 
   // envelope -> signed!!
   //OscillatorValue = (OscillatorValue * g_AmplitudeEnvelope() )>> EnvelopeScale;
   
-  // clamp here!!! unsigned!!!!
-  if(4095<OscillatorValue)
+  // clamp here!!! signed!!!!
+  if(2047<OscillatorValue)
   {
-    OscillatorValue = 4096;
+    OscillatorValue = 2048;
+    ++g_OverflowCounter;
+  }
+  else if(OscillatorValue<-2048)
+  {
+    OscillatorValue = -2048;
+    ++g_OverflowCounter;
   }
   
   return IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
@@ -187,6 +195,7 @@ void setup()
   Serial.println("Starting...");
 
   g_InteruptCounter = 0;
+  g_OverflowCounter = 0;
   Timer3.attachInterrupt(myHandler);
   int SamplingPeriodMicroSeconds = 1000 * 1000 / SamplingFrequency;
   Timer3.start(SamplingPeriodMicroSeconds);
@@ -246,9 +255,12 @@ void loop()
   if(SamplingFrequency*2<=g_InteruptCounter)
   {
     Serial.print(g_InteruptCounter);
+    Serial.print(" O ");
+    Serial.print(g_OverflowCounter); 
     Serial.print(" t=");
     Serial.println(millis());
     g_InteruptCounter = 0;
+    g_OverflowCounter = 0;
   }
   // read midi in -> read something or read nothing
   // if note on/off, change curr amplitide, note
