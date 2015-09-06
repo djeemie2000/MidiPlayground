@@ -1,11 +1,13 @@
 #pragma once
 
 
-template<int Scale = 12>
+template<class T, int Scale = 12>
 class CIntegerPhaseGenerator
 {
 public:
-    CIntegerPhaseGenerator(int Initial = 0)
+  static const int Rescale = 32 - Scale;
+
+    CIntegerPhaseGenerator(T Initial = 0)
         : m_InitialPhase(Initial)
         , m_Phase(Initial)
         , m_PhaseStepUpscaled(1<<Scale)
@@ -16,50 +18,49 @@ public:
         m_Phase = m_InitialPhase;
     }
 
-    int CalcPhaseStepUpscaled(int SamplingFrequency, int FrequencyMilliHz)
-    {
-        float Fs = SamplingFrequency;
-        float F = FrequencyMilliHz / 1000.0f;
-        float Mult = 1<<16;
-        Mult *= Mult;
-        float PhaseStep = F * Mult / Fs;
-        return PhaseStep;
-    }
-
-    void SetFrequency(int SamplingFrequency, int FrequencyMilliHz)
+    T CalcPhaseStepUpscaled(int SamplingFrequency, int FrequencyMilliHz)
     {
         // float Fs = SamplingFrequency;
         // float F = FrequencyMilliHz / 1000.0f;
         // float Mult = 1<<16;
         // Mult *= Mult;
         // float PhaseStep = F * Mult / Fs;
-        // m_PhaseStepUpscaled = PhaseStep;
+        uint64_t Fs = SamplingFrequency;
+        uint64_t F = FrequencyMilliHz;// / 1000.0f;
+        uint64_t Mult = 1<<16;
+        Mult *= Mult;
+        uint64_t PhaseStep = F * Mult / (1000 * Fs);
+        return PhaseStep;
+    }
+
+    void SetFrequency(int SamplingFrequency, int FrequencyMilliHz)
+    {
         m_PhaseStepUpscaled = CalcPhaseStepUpscaled(SamplingFrequency, FrequencyMilliHz);
     }
 
-    void SetPhaseStep(int PhaseStepUpscaled)
+    void SetPhaseStep(T PhaseStepUpscaled)
     {
         m_PhaseStepUpscaled = PhaseStepUpscaled;
     }
 
-    int operator()()
+    T operator()()
     {
         m_Phase += m_PhaseStepUpscaled;
-        return m_Phase>>(32-Scale);
+        return m_Phase>>Rescale;//(32-Scale);
     }
 
-    int Shifted(int PhaseShift)
+    T Shifted(T PhaseShift)
     {
-        return ( m_Phase + (PhaseShift<<(32-Scale)) )>>(32-Scale);
+        return ( m_Phase + (PhaseShift<<Rescale) )>>Rescale;
     }
 
-    int GetPhaseStep() const
+    T GetPhaseStep() const
     {
         return m_PhaseStepUpscaled;
     }
 
 private:
-    int m_InitialPhase;
-    int m_Phase;
-    int m_PhaseStepUpscaled;
+    T m_InitialPhase;
+    T m_Phase;
+    T m_PhaseStepUpscaled;
 };

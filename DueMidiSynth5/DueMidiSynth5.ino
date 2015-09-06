@@ -9,30 +9,20 @@
 #include "IntNoise.h"
 #include "IntOperators.h"
 #include "IntEnvelope.h"
+#include "WaveTableData.h"
+#include "IntInterpolator.h"
 
 // oscillator globals:
-const int SamplingFrequency = 40000;
+const int SamplingFrequency = 64000;//40000;
 
-const int LPFNumPoles = 8;
-
-//integer stuff
 static const int IntegerResolution = 12;
 
-const int NumWaveForms = 6;
-IntOperator g_Operators[NumWaveForms] = { IntSawUp<IntegerResolution>,
-                                        IntPulse<IntegerResolution>,
-                                        IntFullPseudoSin<IntegerResolution>,
-                                        IntSemiPseudoSin<IntegerResolution>,
-                                        IntTriangle<IntegerResolution>,
-                                        IntQuadratic<IntegerResolution>};
-
-const int NumOperators = 4;
-IntOperator g_CurrentOperator[NumOperators];
-
-CIntegerNoise<IntegerResolution> g_NoiseInt;
+const int LPFNumPoles = 8;
 CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
 CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
-CIntegerPhaseGenerator<int, IntegerResolution> g_PhaseInt[NumOperators];
+CIntegerPhaseGenerator<uint32_t, 16> g_PhaseGenerator;// interpolated phase scale = 2^16
+CIntegerInterpolator<7, 16> g_Interpolation;// 128 sized wave table => 7 bit scale, use 16 bits index scale
+
 static const int EnvelopeScale = 8;
 CIntegerAHREnvelope<int, EnvelopeScale> g_AmplitudeEnvelope;
 
@@ -53,90 +43,48 @@ unsigned long g_InteruptCounter;
 
 // midi globals
 const int LpfMidiCC = 1;//mod wheel!
-const int WaveFormMidiCC[NumOperators] = { 17, 17, 21, 21 };
 const int LpfFeedbackMidiCC = 20;
 const int AttackMidiCC = 23;
 const int ReleaseMidiCC = 24;
-
-int g_CurrAmplitude;
+const int WaveTableMidiCC = 17;
 CMidiCC MidiCC;
+int g_CurrAmplitude;
+int g_WaveTableIndex;
 
 
 // helper functions:
 void myHandler()
 {
-  unsigned int DacValue = CalcDacValue();  //  limit on signed value, not here!
+  uint32_t DacValue = CalcDacValue();  //  limit on signed value, not here!
   mcp48_setOutput(0, GAIN_1, 0x01, DacValue);
   ++g_InteruptCounter;
 }
 
-int CalcDacValue()
+uint32_t CalcDacValue()
 {
-  int OscillatorValue = g_FeedbackOperator( ( g_CurrentOperator[0](g_PhaseInt[0]())
-                                          + g_CurrentOperator[1](g_PhaseInt[1]())
-                                          + g_CurrentOperator[2](g_PhaseInt[2]())
-                                          + g_CurrentOperator[3](g_PhaseInt[3]())
-                                          )>>2, g_LPFIntMulti );
+  uint32_t PhaseScaled = g_PhaseGenerator();//saw up
+  uint32_t Index = PhaseScaled>>9; // 16 bits to 7 bits
 
-  // envelope
-  //OscillatorValue = 0<g_CurrAmplitude ? OscillatorValue : 0;
-  OscillatorValue = (OscillatorValue * g_AmplitudeEnvelope() )>> EnvelopeScale;
+  uint32_t OscillatorValue = (wt2::wav_res_waves[wt2::WaveTableOffset*g_WaveTableIndex+Index]) <<4;//first wt of first bank, [0,255] to [0,4096]
+
+  OscillatorValue = (0<g_CurrAmplitude) ? OscillatorValue : 2048; 
+  // envelope -> signed!!
+  //OscillatorValue = (OscillatorValue * g_AmplitudeEnvelope() )>> EnvelopeScale;
   
-  // clamp here!!!
-  if(OscillatorValue<-2048)
+  // clamp here!!! unsigned!!!!
+  if(4095<OscillatorValue)
   {
-    OscillatorValue = -2048;
-  }
-  else if(2047<OscillatorValue)
-  {
-    OscillatorValue = 2047;
+    OscillatorValue = 4096;
   }
   
   return IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
-}
-
-void TestEnvelope()
-{
-  Serial.println("Testing envelope...");
-  CIntegerAHREnvelope<int, EnvelopeScale> Env;
-  const int fs = 100; 
-  Env.SetAttack(fs, 200);
-  Env.SetRelease(fs, 400);  
-  for(int Repeat = 0; Repeat<fs; ++Repeat)
-  {
-    int Ampl = Env();
-    Serial.print(Ampl);
-    Serial.print(" ");
-  }
-  Serial.println();
-  
-  Serial.print("NoteOn ");
-  Env.NoteOn();
-  for(int Repeat = 0; Repeat<fs; ++Repeat)
-  {
-    int Ampl = Env();
-    Serial.print(Ampl);
-    Serial.print(" ");
-  }
-  Serial.println();
-  
-  Serial.print("NoteOff ");
-  Env.NoteOff();
-  for(int Repeat = 0; Repeat<fs; ++Repeat)
-  {
-    int Ampl = Env();
-    Serial.print(Ampl);
-    Serial.print(" ");
-  }
-  Serial.println();
-  delay(2000);
 }
 
 void TestDacValue()
 {
   while(true)
   {
-    int DacValue = CalcDacValue();//CalcLPFNoiseInt();
+    int DacValue = CalcDacValue();
     Serial.println(DacValue);
     if(DacValue<0 || 4096<=DacValue)
     {
@@ -146,7 +94,6 @@ void TestDacValue()
     delay(100);
   }
 }
-
 
 void LogSpeedTest(int Repeats, unsigned long Before, unsigned long After)
 {
@@ -195,7 +142,16 @@ void setup()
 {
   // use Serial as debug output
   Serial.begin(115200);
-  Serial.println("MidiSynth...");
+  Serial.println("MidiSynth with wavetables...");
+
+  Serial.print(wt2::NumWaveTables);
+  Serial.print(" wave tables in ");
+  Serial.print(wt2::NumWaveTableBanks);
+  Serial.print(" banks");
+  Serial.println();
+
+  Serial.print("Sampling frequency is ");
+  Serial.println(SamplingFrequency);
 
   // use serial1 as midi input
   // for now, use serial usb cable => baudrate is not 31250
@@ -210,28 +166,18 @@ void setup()
   mcp48_begin();
 
   MidiCC.SetController(LpfMidiCC, 64);
-  for(int idx = 0; idx<NumOperators; ++idx)
-  {
-    MidiCC.SetController(WaveFormMidiCC[idx], 0);
-  }
   g_LPFIntMulti.SetParameter(MidiCC.GetController(LpfMidiCC)*2);
   g_LPFIntMulti.SetStages(LPFNumPoles);
 
+  g_WaveTableIndex = 16;
+  MidiCC.SetController(WaveTableMidiCC, g_WaveTableIndex%wt2::WaveTableBankSize);
+  MidiCC.SetController(WaveTableMidiCC+1, g_WaveTableIndex/wt2::WaveTableBankSize);
+
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(DefaultMidiNote);
-  for(int idx = 0; idx<NumOperators; ++idx)
-  {
-    int Divider = 1+idx/2;// 1, 2, ...
-    g_PhaseInt[idx].SetFrequency(SamplingFrequency, FreqMilliHz/Divider);
-  }
+  g_PhaseGenerator.SetFrequency(SamplingFrequency, FreqMilliHz);
 
   g_AmplitudeEnvelope.SetAttack(SamplingFrequency, AttackReleaseTimes[1]);
   g_AmplitudeEnvelope.SetRelease(SamplingFrequency, AttackReleaseTimes[1]);
-
-  g_CurrentOperator[0] = g_Operators[0];
-  g_CurrentOperator[1] = g_Operators[0];
-  g_CurrentOperator[2] = g_Operators[0];
-  g_CurrentOperator[3] = g_Operators[0];
-
 
   // always show current processing speed
   TestCalcSpeed();
@@ -249,16 +195,11 @@ void OnNoteOn(int MidiNote, int Velocity)
 {
   ++g_CurrAmplitude;
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(MidiNote);
-  for(int idx = 0; idx<NumOperators; ++idx)
+  g_PhaseGenerator.SetFrequency(SamplingFrequency, FreqMilliHz);
+  // sync for first note, continue for following notes (avoids clicks in audio)
+  if(g_CurrAmplitude==1)
   {
-    int Multiplier = idx%2 ? 255 : 257;//temporary detune TODO!!!
-    int Divider = (1+idx/2)*256;// 1x, 2x, ...
-    g_PhaseInt[idx].SetFrequency(SamplingFrequency, FreqMilliHz*Multiplier/Divider);
-    // sync for first note, continue for following notes (avoids clicks in audio)
-    if(g_CurrAmplitude==1)
-    {
-      g_PhaseInt[idx].Sync();
-    }
+    g_PhaseGenerator.Sync();
   }
   g_AmplitudeEnvelope.NoteOn();
 }
@@ -277,7 +218,6 @@ void OnNoteOff()
 
 void OnController(int Controller, int Value)
 {
-  //TODO
   int LPFCutOff = (1 + MidiCC.GetController(LpfMidiCC))*2;
   g_LPFIntMulti.SetParameter(LPFCutOff);
 
@@ -286,11 +226,18 @@ void OnController(int Controller, int Value)
   g_AmplitudeEnvelope.SetAttack(SamplingFrequency, AttackReleaseTimes[MidiCC.GetController(AttackMidiCC)*160/128]);
   g_AmplitudeEnvelope.SetRelease(SamplingFrequency, AttackReleaseTimes[MidiCC.GetController(ReleaseMidiCC)*160/128]);
 
-  for(int idx = 0; idx<NumOperators; ++idx)
-  {
-    int WaveForm = MidiCC.GetController(WaveFormMidiCC[idx])*NumWaveForms/128;//4 types
-    g_CurrentOperator[idx] = g_Operators[WaveForm];
-  }
+  int WaveTableBank = MidiCC.GetController(WaveTableMidiCC+1)/16;//[0,127] to [0,15]
+  int WaveTable = MidiCC.GetController(WaveTableMidiCC)*wt2::WaveTableBankSize/128;//[0, 127] to [0, 7]
+  g_WaveTableIndex = WaveTableBank*wt2::WaveTableBankSize+WaveTable;// [ 0, 127] to ??
+
+  // debug:
+  Serial.print("Bank ");
+  Serial.print(WaveTableBank);
+  Serial.print(" table ");
+  Serial.print(WaveTable);
+  Serial.print(" -> ");
+  Serial.print(g_WaveTableIndex);
+  Serial.println();
 }
 
 void loop()
