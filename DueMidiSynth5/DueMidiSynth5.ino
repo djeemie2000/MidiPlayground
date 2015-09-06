@@ -68,11 +68,10 @@ uint32_t CalcDacValue()
 
   int OscillatorValue = IntUnipolarToBipolar<IntegerResolution>(WaveTableValue);
   
-  OscillatorValue = g_LPFIntMulti(OscillatorValue);
+  OscillatorValue = g_FeedbackOperator(OscillatorValue, g_LPFIntMulti);
 
-  OscillatorValue = (0<g_CurrAmplitude) ? OscillatorValue : 0; 
   // envelope -> signed!!
-  //OscillatorValue = (OscillatorValue * g_AmplitudeEnvelope() )>> EnvelopeScale;
+  OscillatorValue = (OscillatorValue * g_AmplitudeEnvelope() )>> EnvelopeScale;
   
   // clamp here!!! signed!!!!
   if(2047<OscillatorValue)
