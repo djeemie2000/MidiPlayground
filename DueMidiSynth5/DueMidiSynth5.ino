@@ -13,7 +13,7 @@
 #include "IntInterpolator.h"
 
 // oscillator globals:
-const int SamplingFrequency = 64000;//40000;
+const int SamplingFrequency = 32000;//40000;
 
 static const int IntegerResolution = 12;
 
@@ -63,9 +63,10 @@ void myHandler()
 uint32_t CalcDacValue()
 {
   uint32_t PhaseScaled = g_PhaseGenerator();//saw up
-  uint32_t Index = PhaseScaled>>9; // 16 bits to 7 bits
+  //uint32_t Index = PhaseScaled>>9; // 16 bits to 7 bits
 
-  uint32_t OscillatorValue = (wt2::wav_res_waves[wt2::WaveTableOffset*g_WaveTableIndex+Index]) <<4;//first wt of first bank, [0,255] to [0,4096]
+  //uint32_t OscillatorValue = (wt2::wav_res_waves[wt2::WaveTableOffset*g_WaveTableIndex+Index]) <<4;//first wt of first bank, [0,255] to [0,4096]
+  uint32_t OscillatorValue = g_Interpolation.GetInterpolatedValue(wt2::wav_res_waves + wt2::WaveTableOffset*g_WaveTableIndex, PhaseScaled) <<4;//first wt of first bank, [0,255] to [0,4096]
 
   OscillatorValue = (0<g_CurrAmplitude) ? OscillatorValue : 2048; 
   // envelope -> signed!!
