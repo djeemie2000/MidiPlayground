@@ -1,45 +1,14 @@
 #include <SPI.h>
+#include "UnoMcpDac.h"
 
-const int PIN_CS = 10;
-const int GAIN_1 = 0x1;
-const int GAIN_2 = 0x0;
 
 void setup()
 {
   Serial.begin(115200);
   Serial.println("MCP4822 test 2...");
 
-  pinMode(PIN_CS, OUTPUT);
-  SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV2); //AVR: defult is 4 so 16MHz/4 = 4MHz
-  //SPI.setClockDivider(1);//DUE: default is 21 corresponding to 4MHz as in AVR
-}
-
-//assuming single channel, gain=2
-void setOutput(unsigned int val)
-{
-  byte lowByte = val & 0xff;
-  byte highByte = ((val >> 8) & 0xff) | 0x10;
-
-//  PORTB &= 0xfb;
-  digitalWrite(PIN_CS, LOW);
-  SPI.transfer(highByte);
-  SPI.transfer(lowByte);
-  digitalWrite(PIN_CS, HIGH);
-//  PORTB |= 0x4;
-}
-
-void setOutput(byte channel, byte gain, byte shutdown, unsigned int val)
-{
-  byte lowByte = val & 0xff;
-  byte highByte = ((val >> 8) & 0xff) | channel << 7 | gain << 5 | shutdown << 4;
-
-  //PORTB &= 0xfb;
-  digitalWrite(PIN_CS, LOW);
-  SPI.transfer(highByte);
-  SPI.transfer(lowByte);
-  digitalWrite(PIN_CS, HIGH);
-  //PORTB |= 0x4;
+  pinMode(PIN_CS, OUTPUT);//TODO in lib
+  mcp48_begin();
 }
 
 void TestAccuracy()
@@ -47,11 +16,9 @@ void TestAccuracy()
   //high-res saw wave
   for (unsigned int DacValue = 0; DacValue < 4096; DacValue += 32)
   {
-    setOutput(0, GAIN_1, 1, DacValue);
-    //setOutput(DacValue);
-    //setOutput(1, 0, 0, DacValue);//???
+    mcp48_setOutput(0, GAIN_1, 1, DacValue);
+    //mcp48_setOutput(DacValue);
 
-    //delay(100);
     int ValueA = analogRead(A0);
     int ValueB = analogRead(A1);
     Serial.print("DAC out=");
@@ -75,9 +42,8 @@ void TestSpeed()
   {
     for (unsigned int DacValue = 0; DacValue < 4096; DacValue += 1)
     {
-      setOutput(0, GAIN_1, 1, DacValue);
-      //setOutput(DacValue);
-      //setOutput(1, 0, 0, DacValue);//???
+      //mcp48_setOutput(0, GAIN_1, 1, DacValue);
+      mcp48_setOutput(DacValue);
     }
   }
 
@@ -106,19 +72,19 @@ void TestSaw()
       {
         for (unsigned int DacValue = 0; DacValue < 4096; DacValue += Increase)
         {
-          setOutput(0, GAIN_1, 1, DacValue);
-          //setOutput(DacValue);
-          //setOutput(1, 0, 0, DacValue);//???
+          //mcp48_setOutput(0, GAIN_1, 1, DacValue);
+          mcp48_setOutput(DacValue);
         }
       }
     }
+    Serial.println(millis());
   }
 }
 
 void TestSquare()
-{
-  Serial.println("Saw wave out...");
-  //high-res saw wave
+{ 
+  Serial.println("Square wave out...");
+  //high-res square wave
   while (true)
   {
     for(int Increase = 2; Increase < 16; Increase += 2)
@@ -128,9 +94,8 @@ void TestSquare()
       {
         for (unsigned int DacValue = 0; DacValue < 4096; DacValue += Increase)
         {
-          setOutput(0, GAIN_1, 1, DacValue<2048?0:4095);
-          //setOutput(DacValue);
-          //setOutput(1, 0, 0, DacValue);//???
+          mcp48_setOutput(0, GAIN_1, 1, DacValue<2048?0:4095);
+          //mcp48_setOutput(DacValue);
         }
       }
     }
@@ -140,10 +105,10 @@ void TestSquare()
 
 void loop()
 {
-    TestAccuracy();
+    //TestAccuracy();
     TestSpeed();
   //  delay(500);
-  //TestSaw();
+  TestSaw();
   //TestSquare();
 }
 
