@@ -6,6 +6,7 @@ const int GAIN_2 = 0x0;
 
 void mcp48_begin()
 {
+  pinMode(PIN_CS, OUTPUT);
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV2); //AVR: defult is 4 so 16MHz/4 = 4MHz
 }
