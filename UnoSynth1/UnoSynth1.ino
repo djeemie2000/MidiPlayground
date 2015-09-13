@@ -8,20 +8,12 @@ const int SamplingFrequency = 32000;
 int g_DacValue;
 int g_InterruptCounter;
 const int DacResolution = 12;
-const int NumSaws = 4;
-CIntMultiSaw<int, NumSaws, DacResolution> g_MultiSaw;
+const int NumSaws = 8;
+CIntMultiSaw8<int, DacResolution> g_MultiSaw;
 
 int CalcDacValue()
 {
   return 2048 + g_MultiSaw();
-
-  //  g_DacValue += 32;
-  //  if(4096<=g_DacValue)
-  //  {
-  //    g_DacValue = 0;
-  //  }
-  //
-  //  return g_DacValue;
 }
 
 void WriteDac()
@@ -33,7 +25,7 @@ void WriteDac()
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("MCP4822 test 2...");
+  Serial.println("UnoSynth1...");
 
   mcp48_begin();
 
@@ -66,7 +58,7 @@ void setup()
 
   Serial.println("Starting...");
   Timer1.initialize(PeriodMicroSeconds);
-  //Timer1.attachInterrupt(WriteDac);
+  Timer1.attachInterrupt(WriteDac);
 }
 
 void TestAccuracy()
@@ -91,26 +83,28 @@ void TestAccuracy()
   }
 }
 
+void LogSpeedTest(int Repeats, unsigned long Before, unsigned long After)
+{
+  Serial.print("Repeat x ");
+  Serial.print(Repeats);
+  Serial.print("  = ");
+  unsigned long Duration = After-Before;
+  Serial.print(Duration);
+  Serial.println(" mSec");
+}
+
 void TestMcpSpeed()
 {
+  Serial.println("Test mcp speed..");
   unsigned long Before = millis();
-
   int DacValue = 2048;
   for (int Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
   {
     //mcp48_setOutput(0, GAIN_1, 1, DacValue);
     mcp48_setOutput(DacValue);
   }
-
   unsigned long After = millis();
-  unsigned long Duration = After - Before;
-
-  Serial.print("DAC out x ");
-  Serial.print(SamplingFrequency);
-  Serial.print(" = ");
-  Serial.print(Duration);
-  Serial.print(" mSec");
-  Serial.println();
+  LogSpeedTest(SamplingFrequency, Before, After);
 }
 
 void TestCalcDacValueSpeed()
@@ -124,14 +118,7 @@ void TestCalcDacValueSpeed()
   }
 
   unsigned long After = millis();
-  unsigned long Duration = After - Before;
-
-  Serial.print("DAC calc x ");
-  Serial.print(SamplingFrequency);
-  Serial.print(" = ");
-  Serial.print(Duration);
-  Serial.print(" mSec");
-  Serial.println();
+  LogSpeedTest(SamplingFrequency, Before, After);
 }
 
 void TestCalcPhaseSpeed()
@@ -167,14 +154,7 @@ void TestCalcPhaseSpeed()
   Serial.println(Tmp);
 
   unsigned long After = millis();
-  unsigned long Duration = After - Before;
-
-  Serial.print("DAC calc x ");
-  Serial.print(SamplingFrequency);
-  Serial.print(" = ");
-  Serial.print(Duration);
-  Serial.print(" mSec");
-  Serial.println();
+  LogSpeedTest(SamplingFrequency, Before, After);
 }
 
 
