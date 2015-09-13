@@ -53,6 +53,7 @@ void setup()
 
   TestMcpSpeed();
   TestCalcDacValueSpeed();
+  TestCalcPhaseSpeed();
   delay(1000);
   
   const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
@@ -65,7 +66,7 @@ void setup()
 
   Serial.println("Starting...");
   Timer1.initialize(PeriodMicroSeconds);
-  Timer1.attachInterrupt(WriteDac);
+  //Timer1.attachInterrupt(WriteDac);
 }
 
 void TestAccuracy()
@@ -132,6 +133,50 @@ void TestCalcDacValueSpeed()
   Serial.print(" mSec");
   Serial.println();
 }
+
+void TestCalcPhaseSpeed()
+{
+  unsigned long Before = millis();
+
+  CIntegerPhaseGenerator<int, 12> PhaseGen;
+  unsigned long FreqHz = 100;
+  unsigned long FreqMilliHz = FreqHz*1000;
+  PhaseGen.SetFrequency(SamplingFrequency, FreqMilliHz);
+
+  int Shift[] = { 15, 145, 105, 123, 15, 19, 32, 33 };
+  
+  int Tmp = 0;
+  for (int Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
+  {
+    PhaseGen.Update();
+//    for(int idx = 0; idx<4; ++idx)
+//    {
+//      Tmp += PhaseGen.Shifted(Shift[idx]);
+//    }
+    int Tmp2 = ( PhaseGen.Shifted(*(Shift+0)) 
+                + PhaseGen.Shifted(*(Shift+1)) 
+                + PhaseGen.Shifted(*(Shift+2)) 
+                + PhaseGen.Shifted(*(Shift+3))
+                + PhaseGen.Shifted(*(Shift+4)) 
+                + PhaseGen.Shifted(*(Shift+5)) 
+                + PhaseGen.Shifted(*(Shift+6)) 
+                + PhaseGen.Shifted(*(Shift+7)) 
+                );
+    Tmp += Tmp2>>3;
+  }
+  Serial.println(Tmp);
+
+  unsigned long After = millis();
+  unsigned long Duration = After - Before;
+
+  Serial.print("DAC calc x ");
+  Serial.print(SamplingFrequency);
+  Serial.print(" = ");
+  Serial.print(Duration);
+  Serial.print(" mSec");
+  Serial.println();
+}
+
 
 void TestCalcDacValue()
 {

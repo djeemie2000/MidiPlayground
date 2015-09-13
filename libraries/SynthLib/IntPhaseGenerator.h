@@ -63,6 +63,11 @@ public:
         m_PhaseStepUpscaled = PhaseStepUpscaled;
     }
 
+    void Update()
+    {
+        m_Phase += m_PhaseStepUpscaled;
+    }
+
     T operator()()
     {
         m_Phase += m_PhaseStepUpscaled;

@@ -29,16 +29,10 @@ public:
     {
         m_Phase();
 
-        T Out = 0;
-        for(int idx = 0; idx<NumSaws; ++idx)
+        T Out = m_Phase.Shifted(m_PhaseShift[0]);
+        for(int idx = 1; idx<NumSaws; ++idx)
         {
             Out += m_Phase.Shifted(m_PhaseShift[idx]);
-            //Serial.print(idx);
-            //Serial.print(" ");
-            //Serial.print(m_PhaseShift[idx]);
-            //Serial.print(" ");
-            //Serial.print(Out);
-            //Serial.println();
         }
         return Out/NumSaws;
     }
