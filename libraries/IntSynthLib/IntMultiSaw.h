@@ -84,7 +84,7 @@ public:
     {
         m_Phase.Update();
 
-        return ( m_Phase.Shifted(m_PhaseShift[0])
+        return ( m_Phase.Shifted(*m_PhaseShift)
                 + m_Phase.Shifted(m_PhaseShift[1])
                 + m_Phase.Shifted(m_PhaseShift[2])
                 + m_Phase.Shifted(m_PhaseShift[3])

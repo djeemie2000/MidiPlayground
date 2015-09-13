@@ -3,7 +3,7 @@
 #include "TimerOne.h"
 #include "IntMultiSaw.h"
 
-const int SamplingFrequency = 32000;
+const int SamplingFrequency = 26000;//32000;
 
 int g_DacValue;
 int g_InterruptCounter;
@@ -11,10 +11,29 @@ const int DacResolution = 12;
 const int NumSaws = 8;
 CIntMultiSaw8<int, DacResolution> g_MultiSaw;
 
+CIntegerPhaseGenerator<int, 12> g_Phase;
+int g_PhaseShift[NumSaws];
+
 int CalcDacValue()
 {
   return 2048 + g_MultiSaw();
 }
+
+int CalcDacValue2()
+{
+  g_Phase.Update();
+  int Tmp = ( g_Phase.Shifted(*(g_PhaseShift+0)) 
+                + g_Phase.Shifted(*(g_PhaseShift+1)) 
+                + g_Phase.Shifted(*(g_PhaseShift+2)) 
+                + g_Phase.Shifted(*(g_PhaseShift+3))
+                + g_Phase.Shifted(*(g_PhaseShift+4)) 
+                + g_Phase.Shifted(*(g_PhaseShift+5)) 
+                + g_Phase.Shifted(*(g_PhaseShift+6)) 
+                + g_Phase.Shifted(*(g_PhaseShift+7)) 
+                ) >> 3;
+  return 2048 + Tmp;
+}
+
 
 void WriteDac()
 {
@@ -32,20 +51,22 @@ void setup()
   g_DacValue = 0;
   g_InterruptCounter = 0;
 
-  uint64_t FreqHz = 100;
+  uint64_t FreqHz = 110;
   uint64_t FreqMilliHz = FreqHz * 1000;
   g_MultiSaw.SetFrequency(SamplingFrequency, FreqMilliHz);
+  g_Phase.SetFrequency(SamplingFrequency, FreqMilliHz);
   for (int idx = 0; idx < NumSaws; ++idx)
   {
     g_MultiSaw.SetPhaseShift(0, idx);
+    g_PhaseShift[idx] = 0;
   }
 
   // debugging:
   //  TestCalcDacValue();
 
+  TestCalcPhaseSpeed();
   TestMcpSpeed();
   TestCalcDacValueSpeed();
-  TestCalcPhaseSpeed();
   delay(1000);
   
   const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
@@ -54,7 +75,6 @@ void setup()
   Serial.print(" Period=");
   Serial.print(PeriodMicroSeconds);
   Serial.println(" uSec");
-
 
   Serial.println("Starting...");
   Timer1.initialize(PeriodMicroSeconds);
@@ -135,28 +155,24 @@ void TestCalcPhaseSpeed()
   int Tmp = 0;
   for (int Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
   {
-    PhaseGen.Update();
-//    for(int idx = 0; idx<4; ++idx)
-//    {
-//      Tmp += PhaseGen.Shifted(Shift[idx]);
-//    }
-    int Tmp2 = ( PhaseGen.Shifted(*(Shift+0)) 
-                + PhaseGen.Shifted(*(Shift+1)) 
-                + PhaseGen.Shifted(*(Shift+2)) 
-                + PhaseGen.Shifted(*(Shift+3))
-                + PhaseGen.Shifted(*(Shift+4)) 
-                + PhaseGen.Shifted(*(Shift+5)) 
-                + PhaseGen.Shifted(*(Shift+6)) 
-                + PhaseGen.Shifted(*(Shift+7)) 
-                );
-    Tmp += Tmp2>>3;
+    Tmp += CalcDacValue2(); 
+//    PhaseGen.Update();
+//    int Tmp2 = ( PhaseGen.Shifted(*(Shift+0)) 
+//                + PhaseGen.Shifted(*(Shift+1)) 
+//                + PhaseGen.Shifted(*(Shift+2)) 
+//                + PhaseGen.Shifted(*(Shift+3))
+//                + PhaseGen.Shifted(*(Shift+4)) 
+//                + PhaseGen.Shifted(*(Shift+5)) 
+//                + PhaseGen.Shifted(*(Shift+6)) 
+//                + PhaseGen.Shifted(*(Shift+7)) 
+//                );
+//    Tmp += Tmp2>>3;
   }
   Serial.println(Tmp);
 
   unsigned long After = millis();
   LogSpeedTest(SamplingFrequency, Before, After);
 }
-
 
 void TestCalcDacValue()
 {
@@ -173,20 +189,18 @@ void TestCalcDacValue()
 void loop()
 {
   // basic LFO triangular
-//  static int LoopCounter = 0;
-//  static int Incr = 1;
-//  int PhaseShift = LoopCounter;
-//  for (int idx = 0; idx < NumSaws; ++idx)
-//  {
-//    g_MultiSaw.SetPhaseShift((PhaseShift*idx)%2048, idx);
-//  }
-//  if(1024<LoopCounter)
-//  {
-//    Incr = -Incr;
-//    LoopCounter = 0;
-//  }
-//  LoopCounter += Incr;
-//  delay(1); //??
+  static int LoopCounter = 0;
+  static int Incr = 1;
+  int PhaseShift = LoopCounter;
+  for (int idx = 2; idx < NumSaws; ++idx)
+  {
+    int Sign = idx%2 ? 1 : -1;
+    int Shift = ((PhaseShift + 120*idx) % 4096) - 2048;
+    g_MultiSaw.SetPhaseShift(Sign*Shift, idx);
+    g_PhaseShift[idx] = Sign*Shift;
+  }
+  LoopCounter += Incr;
+  delay(3); //??
 //  
   if (SamplingFrequency <= g_InterruptCounter)
   {
