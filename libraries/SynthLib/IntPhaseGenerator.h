@@ -5,35 +5,55 @@ template<class T, int Scale = 12>
 class CIntegerPhaseGenerator
 {
 public:
-  static const int Rescale = 32 - Scale;
+  static const int MaxNumBits = sizeof(T)*8;
+  static const int Rescale = MaxNumBits - Scale;
 
     CIntegerPhaseGenerator(T Initial = 0)
         : m_InitialPhase(Initial)
         , m_Phase(Initial)
         , m_PhaseStepUpscaled(1<<Scale)
-    {}
+    {
+    }
 
     void Sync()
     {
         m_Phase = m_InitialPhase;
     }
 
-    T CalcPhaseStepUpscaled(int SamplingFrequency, int FrequencyMilliHz)
+    T CalcPhaseStepUpscaled(uint64_t SamplingFrequency, uint64_t FrequencyMilliHz)
     {
-        // float Fs = SamplingFrequency;
-        // float F = FrequencyMilliHz / 1000.0f;
-        // float Mult = 1<<16;
-        // Mult *= Mult;
-        // float PhaseStep = F * Mult / Fs;
+//        float Fs = SamplingFrequency;
+//        float F = FrequencyMilliHz / 1000.0f;
+//        float Mult = T(1)<<16;
+//        Mult *= Mult;
+//        float PhaseStep = F * Mult / Fs;
+
+        Serial.print("Max=");
+        Serial.print(MaxNumBits);
+        Serial.print(" Rescale= ");
+        Serial.println(Rescale);
+
         uint64_t Fs = SamplingFrequency;
-        uint64_t F = FrequencyMilliHz;// / 1000.0f;
-        uint64_t Mult = 1<<16;
-        Mult *= Mult;
+        uint64_t F = FrequencyMilliHz;
+        uint64_t Mult = uint64_t(1)<<MaxNumBits;
         uint64_t PhaseStep = F * Mult / (1000 * Fs);
+
+        Serial.print("Fs=");
+        Serial.print(float(Fs));
+
+        Serial.print(" F ");
+        Serial.print(float(F));
+
+        Serial.print(" M ");
+        Serial.print(float(Mult));
+
+        Serial.print(" PhStep=");
+        Serial.println(T(PhaseStep));
+
         return PhaseStep;
     }
 
-    void SetFrequency(int SamplingFrequency, int FrequencyMilliHz)
+    void SetFrequency(uint64_t SamplingFrequency, uint64_t FrequencyMilliHz)
     {
         m_PhaseStepUpscaled = CalcPhaseStepUpscaled(SamplingFrequency, FrequencyMilliHz);
     }
@@ -46,7 +66,7 @@ public:
     T operator()()
     {
         m_Phase += m_PhaseStepUpscaled;
-        return m_Phase>>Rescale;//(32-Scale);
+        return m_Phase>>Rescale;
     }
 
     T Shifted(T PhaseShift)
