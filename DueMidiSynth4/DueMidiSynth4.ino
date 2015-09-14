@@ -19,22 +19,22 @@ const int LPFNumPoles = 8;
 static const int IntegerResolution = 12;
 
 const int NumWaveForms = 6;
-IntOperator g_Operators[NumWaveForms] = { IntSawUp<IntegerResolution>,
-                                        IntPulse<IntegerResolution>,
-                                        IntFullPseudoSin<IntegerResolution>,
-                                        IntSemiPseudoSin<IntegerResolution>,
-                                        IntTriangle<IntegerResolution>,
-                                        IntQuadratic<IntegerResolution>};
+isl::IntOperator g_Operators[NumWaveForms] = { isl::IntSawUp<IntegerResolution>,
+                                        isl::IntPulse<IntegerResolution>,
+                                        isl::IntFullPseudoSin<IntegerResolution>,
+                                        isl::IntSemiPseudoSin<IntegerResolution>,
+                                        isl::IntTriangle<IntegerResolution>,
+                                        isl::IntQuadratic<IntegerResolution>};
 
 const int NumOperators = 4;
-IntOperator g_CurrentOperator[NumOperators];
+isl::IntOperator g_CurrentOperator[NumOperators];
 
-CIntegerNoise<IntegerResolution> g_NoiseInt;
-CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
-CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
-CIntegerPhaseGenerator<int, IntegerResolution> g_PhaseInt[NumOperators];
+isl::CIntegerNoise<IntegerResolution> g_NoiseInt;
+isl::CIntegerMultiStageFilter<int, isl::CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
+isl::CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
+isl::CIntegerPhaseGenerator<int, IntegerResolution> g_PhaseInt[NumOperators];
 static const int EnvelopeScale = 8;
-CIntegerAHREnvelope<int, EnvelopeScale> g_AmplitudeEnvelope;
+isl::CIntegerAHREnvelope<int, EnvelopeScale> g_AmplitudeEnvelope;
 
 const int AttackReleaseTimes[] = { 1, 2, 3, 4, 5, 6, 7, 8, 
                                       9, 10, 11, 12, 13, 14, 15, 16,
@@ -92,13 +92,13 @@ int CalcDacValue()
     OscillatorValue = 2047;
   }
   
-  return IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
+  return isl::IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
 }
 
 void TestEnvelope()
 {
   Serial.println("Testing envelope...");
-  CIntegerAHREnvelope<int, EnvelopeScale> Env;
+  isl::CIntegerAHREnvelope<int, EnvelopeScale> Env;
   const int fs = 100; 
   Env.SetAttack(fs, 200);
   Env.SetRelease(fs, 400);  

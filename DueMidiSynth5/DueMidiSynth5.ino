@@ -18,13 +18,13 @@ const int SamplingFrequency = 40000;//40000;
 static const int IntegerResolution = 12;
 
 const int LPFNumPoles = 8;
-CIntegerMultiStageFilter<int, CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
-CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
-CIntegerPhaseGenerator<uint32_t, 16> g_PhaseGenerator;// interpolated phase scale = 2^16
-CIntegerInterpolator<7, 16> g_Interpolation;// 128 sized wave table => 7 bit scale, use 16 bits index scale
+isl::CIntegerMultiStageFilter<int, isl::CIntegerOnePoleLowPassFilter<int, 8>, LPFNumPoles> g_LPFIntMulti;
+isl::CIntegerFeedbackOperator<int, 7> g_FeedbackOperator;//scale [0, 128] cfr midi
+isl::CIntegerPhaseGenerator<uint32_t, 16> g_PhaseGenerator;// interpolated phase scale = 2^16
+isl::CIntegerInterpolator<7, 16> g_Interpolation;// 128 sized wave table => 7 bit scale, use 16 bits index scale
 
 static const int EnvelopeScale = 8;
-CIntegerAHREnvelope<int, EnvelopeScale> g_AmplitudeEnvelope;
+isl::CIntegerAHREnvelope<int, EnvelopeScale> g_AmplitudeEnvelope;
 
 const int AttackReleaseTimes[] = { 1, 2, 3, 4, 5, 6, 7, 8, 
                                       9, 10, 11, 12, 13, 14, 15, 16,
@@ -66,7 +66,7 @@ uint32_t CalcDacValue()
   uint32_t PhaseScaled = g_PhaseGenerator();//saw up
   int WaveTableValue = g_Interpolation.GetInterpolatedValue(wt2::wav_res_waves + wt2::WaveTableOffset*g_WaveTableIndex, PhaseScaled) <<0;//first wt of first bank, [0,255] to [0,2040]
 
-  int OscillatorValue = IntUnipolarToBipolar<IntegerResolution>(WaveTableValue);
+  int OscillatorValue = isl::IntUnipolarToBipolar<IntegerResolution>(WaveTableValue);
   
   OscillatorValue = g_FeedbackOperator(OscillatorValue, g_LPFIntMulti);
 
@@ -85,7 +85,7 @@ uint32_t CalcDacValue()
     ++g_OverflowCounter;
   }
   
-  return IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
+  return isl::IntBipolarToUnsigned<IntegerResolution>(OscillatorValue);
 }
 
 void TestDacValue()
