@@ -76,7 +76,7 @@ uint32_t CalcDacValue()
   // clamp here!!! signed!!!!
   if(2047<OscillatorValue)
   {
-    OscillatorValue = 2048;
+    OscillatorValue = 2047;
     ++g_OverflowCounter;
   }
   else if(OscillatorValue<-2048)
