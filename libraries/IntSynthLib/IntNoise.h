@@ -1,5 +1,8 @@
 #pragma once
 
+namespace isl
+{
+
 template<int Scale = 12>
 class CIntegerNoise
 {
@@ -28,3 +31,5 @@ private:
     // random = (random * 196314165) + 907633515;
     uint32_t m_Random;
 };
+
+}

@@ -2,6 +2,9 @@
 
 #include "IntConversions.h"
 
+namespace isl
+{
+
 typedef int(*IntOperator)(int);
 
 template<int Scale>
@@ -77,3 +80,5 @@ int IntTriangle(int Phase)
 {
   return Phase<0 ?  (1<<(Scale-1)) + (Phase<<1) : (1<<(Scale-1)) - (Phase<<1);
 }
+
+}//namespace isl

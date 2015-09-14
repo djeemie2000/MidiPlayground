@@ -9,9 +9,9 @@ int g_DacValue;
 int g_InterruptCounter;
 const int DacResolution = 12;
 const int NumSaws = 8;
-CIntMultiSaw8<int, DacResolution> g_MultiSaw;
+isl::CIntMultiSaw8<int, DacResolution> g_MultiSaw;
 
-CIntegerPhaseGenerator<int, 12> g_Phase;
+isl::CIntegerPhaseGenerator<int, 12> g_Phase;
 int g_PhaseShift[NumSaws];
 
 int CalcDacValue()
@@ -93,7 +93,6 @@ void TestCalcDacValueSpeed()
 {
   unsigned long Before = millis();
 
-  int DacValue = 2048;
   for (int Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
   {
     CalcDacValue();
@@ -107,12 +106,12 @@ void TestCalcPhaseSpeed()
 {
   unsigned long Before = millis();
 
-  CIntegerPhaseGenerator<int, 12> PhaseGen;
+  isl::CIntegerPhaseGenerator<int, 12> PhaseGen;
   unsigned long FreqHz = 100;
   unsigned long FreqMilliHz = FreqHz*1000;
   PhaseGen.SetFrequency(SamplingFrequency, FreqMilliHz);
 
-  int Shift[] = { 15, 145, 105, 123, 15, 19, 32, 33 };
+//  int Shift[] = { 15, 145, 105, 123, 15, 19, 32, 33 };
 
   int Tmp = 0;
   for (int Repeat = 0; Repeat < SamplingFrequency; ++Repeat)

@@ -1,5 +1,8 @@
 #pragma once
 
+namespace isl
+{
+
 // [0,1] to [-1,1]  or [0, 2^N] to [-2^N, 2^N]
 template<int Scale>
 int IntUnipolarToBipolar(int In)
@@ -34,3 +37,5 @@ IntegerType FloatBipolarToIntBipolar(FloatType In)
 {
     return In * (1<<(Scale-1));
 }
+
+}//namespace isl

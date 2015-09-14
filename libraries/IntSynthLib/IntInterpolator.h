@@ -1,5 +1,8 @@
 #pragma once
 
+namespace isl
+{
+
 template<int SizeScale, int IndexScale = 16>
 class CIntegerInterpolator
 {
@@ -22,3 +25,5 @@ public:
         return Val;
     }
 };
+
+}

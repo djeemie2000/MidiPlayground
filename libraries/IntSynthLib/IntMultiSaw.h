@@ -2,6 +2,9 @@
 
 #include "IntPhaseGenerator.h"
 
+namespace isl
+{
+
 template<class T, int NumSaws, int Scale>
 class CIntMultiSaw
 {
@@ -113,3 +116,5 @@ private:
     CIntegerPhaseGenerator<T, Scale> m_Phase;
     T m_PhaseShift[NumSaws];
 };
+
+}

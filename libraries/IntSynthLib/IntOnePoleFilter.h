@@ -1,5 +1,8 @@
 #pragma once
 
+namespace isl
+{
+
 template<class T, int Scale = 8>
 class CIntegerOnePoleLowPassFilter
 {
@@ -104,8 +107,6 @@ public:
     CIntegerMultiStageFilter()
         : m_Filter()
         , m_Stages(1)
-//        , m_Feedback(0)
-//        , m_PrevOut(0)
     {
     }
 
@@ -122,12 +123,6 @@ public:
         }
     }
 
-//    void SetFeedback(T Feedback)
-//    {
-//        // expected to be in [0,1]
-//        m_Feedback = Feedback;
-//    }
-
     T operator()(T In)
     {
         T Out = In;// - m_Feedback*m_PrevOut;
@@ -137,40 +132,12 @@ public:
             Out = m_Filter[Stage](Out);
             ++Stage;
         }
-//        m_PrevOut = Out;//HardLimitSigned(Out);//TODO more efficient?
-//        return m_PrevOut;
           return Out;
     }
-
-//    T operator()(T In, T Parameter)
-//    {
-//        T Out = In - m_Feedback*m_PrevOut;
-//        int Stage = 0;
-//        while(Stage<m_Stages)
-//        {
-//            Out = m_Filter[Stage](Out, Parameter);
-//            ++Stage;
-//        }
-//        m_PrevOut = Out;//HardLimitSigned(Out);//TODO more efficient?
-//        return m_PrevOut;
-//    }
-
-//    T operator()(T In, T Parameter, T Feedback)
-//    {
-//        T Out = In - Feedback*m_PrevOut;
-//        int Stage = 0;
-//        while(Stage<m_Stages)
-//        {
-//            Out = m_Filter[Stage](Out, Parameter);
-//            ++Stage;
-//        }
-//        m_PrevOut = Out;//HardLimitSigned(Out);//TODO more efficient?
-//        return m_PrevOut;
-//    }
 
 private:
     FilterType m_Filter[N];
     int m_Stages;
-//    T m_Feedback;
-//    T m_PrevOut;
 };
+
+}

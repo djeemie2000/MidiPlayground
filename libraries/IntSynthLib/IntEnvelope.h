@@ -1,5 +1,8 @@
 #pragma once
 
+namespace isl
+{
+
 template<class T, int Scale>
 class CIntegerAHREnvelope
 {
@@ -70,3 +73,5 @@ private:
   T   m_AttackSlope;
   T   m_ReleaseSlope;
 };
+
+}

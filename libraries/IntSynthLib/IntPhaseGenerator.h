@@ -1,5 +1,7 @@
 #pragma once
 
+namespace isl
+{
 
 template<class T, int Scale = 12>
 class CIntegerPhaseGenerator
@@ -89,3 +91,5 @@ private:
     T m_Phase;
     T m_PhaseStepUpscaled;
 };
+
+}//namespace isl

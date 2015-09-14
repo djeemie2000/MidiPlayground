@@ -3,6 +3,8 @@
 #include <cmath>
 #include "IntOperators.h"
 
+namespace isl
+{
 
 typedef int(*IntCombinor)(int, int);
 
@@ -135,3 +137,5 @@ T IntMultMod2(T In1, T In2)
     //return In2*(1+In1);
     return ( In2 * ( (1<<(Scale-1)) + In1 ) ) >> (Scale-1);
 }
+
+}//namespace isl
