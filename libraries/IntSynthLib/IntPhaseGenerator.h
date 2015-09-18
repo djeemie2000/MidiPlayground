@@ -30,27 +30,27 @@ public:
 //        Mult *= Mult;
 //        float PhaseStep = F * Mult / Fs;
 
-        Serial.print("Max=");
-        Serial.print(MaxNumBits);
-        Serial.print(" Rescale= ");
-        Serial.println(Rescale);
+        //Serial.print("Max=");
+        //Serial.print(MaxNumBits);
+       // Serial.print(" Rescale= ");
+        //Serial.println(Rescale);
 
         uint64_t Fs = SamplingFrequency;
         uint64_t F = FrequencyMilliHz;
         uint64_t Mult = uint64_t(1)<<MaxNumBits;
         uint64_t PhaseStep = F * Mult / (1000 * Fs);
 
-        Serial.print("Fs=");
-        Serial.print(float(Fs));
+        //Serial.print("Fs=");
+        //Serial.print(float(Fs));
 
-        Serial.print(" F ");
-        Serial.print(float(F));
+        //Serial.print(" F ");
+        //Serial.print(float(F));
 
-        Serial.print(" M ");
-        Serial.print(float(Mult));
+        //Serial.print(" M ");
+        //Serial.print(float(Mult));
 
-        Serial.print(" PhStep=");
-        Serial.println(T(PhaseStep));
+        //Serial.print(" PhStep=");
+        //Serial.println(T(PhaseStep));
 
         return PhaseStep;
     }

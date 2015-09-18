@@ -81,4 +81,10 @@ int IntTriangle(int Phase)
   return Phase<0 ?  (1<<(Scale-1)) + (Phase<<1) : (1<<(Scale-1)) - (Phase<<1);
 }
 
+template<int Scale>
+int IntNoOp(int /*Phase*/)
+{
+    return 0;
+}
+
 }//namespace isl
