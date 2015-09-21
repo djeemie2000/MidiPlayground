@@ -34,13 +34,13 @@ int IntSawDown(int Phase)
 template<int Scale>
 int IntPulse(int Phase)
 {
-    return Phase<0 ? IntMinSigned<Scale>(): IntMaxSigned<Scale>();
+    return Phase<0 ? IntMinSigned<Scale>(): IntMaxSigned<Scale>() -1;
 }
 
 template<int Scale>
 int IntPseudoSinCalc(int Phase)
 {
-    return (4 * Phase * (IntMaxSigned<Scale>() - Phase) ) >> (Scale-1);
+    return (4l * Phase * (IntMaxSigned<Scale>() - Phase) ) >> (Scale-1);
 }
 
 template<int Scale>
@@ -60,7 +60,7 @@ int IntSemiPseudoSin(int Phase)
 template<int Scale>
 int IntQuadraticCalc(int Phase)
 {
-    return (Phase * Phase) >> (Scale-1);
+    return (1l * Phase * Phase) >> (Scale-1);
 }
 
 template<int Scale>
