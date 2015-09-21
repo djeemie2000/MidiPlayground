@@ -13,20 +13,45 @@ class COperatorFactory
 public:
     static IntOperator GetOperator(int Selected)
     {
-        const IntOperator AvailableOperators[] = { IntSawUp<Scale>,
-                                                              IntSawDown<Scale>,
-                                                              IntPulse<Scale>,
-                                                              IntFullPseudoSin<Scale>,
-                                                              IntSemiPseudoSin<Scale>,
-                                                              IntTriangle<Scale>,
-                                                              IntQuadratic<Scale>,
-                                                              IntNoOp<Scale>};
-        return AvailableOperators[Selected];
+        if(Selected == 0)
+        {
+            return IntSawUp<Scale>;
+        }
+        else if(Selected == 1)
+        {
+            return IntSawDown<Scale>;
+        }
+        else if(Selected == 2)
+        {
+            return IntPulsePos<Scale>;
+        }
+        else if(Selected == 3)
+        {
+            return IntPulseNeg<Scale>;
+        }
+        else if(Selected == 4)
+        {
+            return IntFullPseudoSin<Scale>;
+        }
+        else if(Selected == 5)
+        {
+            return IntSemiPseudoSin<Scale>;
+        }
+        else if(Selected == 6)
+        {
+            return IntTriangle<Scale>;
+        }
+        else if(Selected == 7)
+        {
+            return IntQuadratic<Scale>;
+        }
+
+        return IntNoOp<Scale>;
     }
 
     //static std::vector<std::string> AvailableOperatorNames()
     //{
-    //    return { "Saw+", "Saw-", "Pulse-", "Sin", "Sinh", "Triangle", "Quadratic", "NoOp" };
+    //    return { "Saw+", "Saw-", "Pulse+", "Pulse-", "Sin", "Sinh", "Triangle", "Quadratic", "NoOp" };
     //}
 };
 

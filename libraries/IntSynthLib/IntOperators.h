@@ -38,6 +38,18 @@ int IntPulse(int Phase)
 }
 
 template<int Scale>
+int IntPulsePos(int Phase)
+{
+    return Phase<0 ? IntMinSigned<Scale>(): IntMaxSigned<Scale>() -1;
+}
+
+template<int Scale>
+int IntPulseNeg(int Phase)
+{
+    return Phase<0 ? IntMaxSigned<Scale>() -1: IntMinSigned<Scale>();
+}
+
+template<int Scale>
 int IntPseudoSinCalc(int Phase)
 {
     return (4l * Phase * (IntMaxSigned<Scale>() - Phase) ) >> (Scale-1);
