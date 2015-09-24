@@ -2,11 +2,15 @@
 #include "MIDI.h"//serial midi on Serial1 
 //#include "usb_api.h"
 
+#define USE_USB
+
 // use this to switch between serial1 and usb midi
-#ifdef usbMIDI
+#ifdef USE_USB
 #define MIDI_USED usbMIDI
 #define SERIAL_USED Serial1
-#else
+#endif
+
+#ifndef USE_USB
 #define MIDI_USED MIDI
 #define SERIAL_USED Serial
 #endif
@@ -16,7 +20,7 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
   SERIAL_USED.print("NoteOn : ch ");
   SERIAL_USED.print(Channel, DEC);
   SERIAL_USED.print(" note ");
-  SERIAL_USED.print(Note, HEX);
+  SERIAL_USED.print(Note, DEC);
   SERIAL_USED.print(" vel ");
   SERIAL_USED.println(Velocity);
 }
@@ -26,7 +30,7 @@ void OnNoteOff(byte Channel, byte Note, byte Velocity)
   SERIAL_USED.print("NoteOff : ch ");
   SERIAL_USED.print(Channel, DEC);
   SERIAL_USED.print(" note ");
-  SERIAL_USED.print(Note, HEX);
+  SERIAL_USED.print(Note, DEC);
   SERIAL_USED.print(" vel ");
   SERIAL_USED.println(Velocity);
 }
@@ -36,7 +40,7 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   SERIAL_USED.print("CC : ch ");
   SERIAL_USED.print(Channel, DEC);
   SERIAL_USED.print(" nr ");
-  SERIAL_USED.print(Number, HEX);
+  SERIAL_USED.print(Number, DEC);
   SERIAL_USED.print(" val ");
   SERIAL_USED.println(Value);
 }
@@ -51,7 +55,7 @@ void OnPitchBend(byte Channel, int Bend)
 
 void TestSerial1In()
 {
-  #ifndef usbMIDI
+  #ifndef USE_USB
 
   Serial.println("Testing serial 1 in...");
   while(true)
@@ -59,8 +63,8 @@ void TestSerial1In()
     if(0<Serial1.available())
     {
       int Byte = Serial1.read();
-      Serial.print(Byte, HEX);
-      Serial.println(' ');
+      Serial.print(' 0x');
+      Serial.println(Byte, HEX);
     }
   }
   
@@ -74,7 +78,7 @@ void setup() {
   
   SERIAL_USED.println("Teensy Midi In test...");
 
-  #ifndef usbMIDI
+  #ifndef USE_USB
   MIDI_USED.begin(MIDI_CHANNEL_OMNI, 115200);//for now, use midi-ox or similar
   #endif
 
@@ -83,10 +87,10 @@ void setup() {
   MIDI_USED.setHandleNoteOn(OnNoteOn);
   MIDI_USED.setHandleNoteOff(OnNoteOff);
   MIDI_USED.setHandleControlChange(OnControlChange);
-  #ifndef usbMIDI
+  #ifndef USE_USB
   MIDI_USED.setHandlePitchBend(OnPitchBend);
   #endif
-  #ifdef usbMIDI
+  #ifdef USE_USB
   MIDI_USED.setHandlePitchChange(OnPitchBend);
   #endif
   
