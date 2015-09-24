@@ -49,6 +49,24 @@ void OnPitchBend(byte Channel, int Bend)
   SERIAL_USED.println(Bend);
 }
 
+void TestSerial1In()
+{
+  #ifndef usbMIDI
+
+  Serial.println("Testing serial 1 in...");
+  while(true)
+  {
+    if(0<Serial1.available())
+    {
+      int Byte = Serial1.read();
+      Serial.print(Byte, HEX);
+      Serial.println(' ');
+    }
+  }
+  
+  #endif
+}
+
 void setup() {
   // put your setup code here, to run once:
   SERIAL_USED.begin(115200);
@@ -56,13 +74,16 @@ void setup() {
   
   SERIAL_USED.println("Teensy Midi In test...");
 
-  #ifdef MIDI
+  #ifndef usbMIDI
   MIDI_USED.begin(MIDI_CHANNEL_OMNI, 115200);//for now, use midi-ox or similar
   #endif
+
+  //TestSerial1In();
+  
   MIDI_USED.setHandleNoteOn(OnNoteOn);
   MIDI_USED.setHandleNoteOff(OnNoteOff);
   MIDI_USED.setHandleControlChange(OnControlChange);
-  #ifdef MIDI
+  #ifndef usbMIDI
   MIDI_USED.setHandlePitchBend(OnPitchBend);
   #endif
   #ifdef usbMIDI
@@ -75,9 +96,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  for(int Repeat = 0; Repeat<5000; ++Repeat)
+  for(int Repeat = 0; Repeat<100000; ++Repeat)
   {
     MIDI_USED.read();
   }
-  SERIAL_USED.println("Midi read 5000x");
+  //SERIAL_USED.println("Midi read 100000x");
 }
