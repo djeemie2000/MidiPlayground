@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include "spi4teensy3.h"
 #include "TeensyMcpDac.h"
 
 const int AnalogInPin = A0;
@@ -8,7 +9,8 @@ void TestAccuracy()
   Serial.println("Test accuracy...");
   for(int Value = 0; Value<4096; Value += 64)
   {
-    mcp48_setOutput(Value);//mcp48_setOutput(0, GAIN_1, 1, Value);
+    mcp48_setOutput(Value);
+    //mcp48_setOutput(0, GAIN_1, 1, Value);
     delay(1);//???
     int ValueIn = analogRead(AnalogInPin);
     Serial.print("Out= ");
@@ -26,7 +28,7 @@ void TestSpeed()
   const int NumRepeats = 40000;
   for(int Value = 0; Value<NumRepeats; ++Value)
   {
-    mcp48_setOutput(Value%4096);//mcp48_setOutput(0, GAIN_1, 1, Value);
+    mcp48_setOutput(Value%4096);
   }
   unsigned long After = millis();
   unsigned long Duration = After-Before;
