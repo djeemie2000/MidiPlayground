@@ -2,7 +2,9 @@
 #include "MIDI.h"//serial midi on Serial1 
 //#include "usb_api.h"
 
-#define USE_USB
+// use USB for midi in (and midi out) and use Serial1 as serial out
+// comment out for using Serial1 as midi in and use usb as serial out
+#define USE_USB 
 
 // use this to switch between serial1 and usb midi
 #ifdef USE_USB
