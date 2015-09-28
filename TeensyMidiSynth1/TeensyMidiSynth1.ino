@@ -29,6 +29,7 @@ void SpeedTest()
   for(int idx = 0; idx<SamplingFrequency; ++idx)
   {
     bs += CalcDacValue();
+    //OnTimer();
   }
   unsigned long After = millis();
   SERIAL_USED.print("Repeat x ");
@@ -41,6 +42,11 @@ void SpeedTest()
 
 void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
+  LogNoteOn(Channel, Note, Velocity);
+}
+
+void LogNoteOn(byte Channel, byte Note, byte Velocity)
+{
   SERIAL_USED.print("NoteOn : ch ");
   SERIAL_USED.print(Channel, DEC);
   SERIAL_USED.print(" note ");
@@ -50,6 +56,11 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
 }
 
 void OnNoteOff(byte Channel, byte Note, byte Velocity)
+{
+  LogNoteOff(Channel, Note, Velocity);
+}
+
+void LogNoteOff(byte Channel, byte Note, byte Velocity)
 {
   SERIAL_USED.print("NoteOff : ch ");
   SERIAL_USED.print(Channel, DEC);
@@ -61,6 +72,11 @@ void OnNoteOff(byte Channel, byte Note, byte Velocity)
 
 void OnControlChange(byte Channel, byte Number, byte Value)
 {
+  LogControlChange(Channel, Number, Value);
+}
+
+void LogControlChange(byte Channel, byte Number, byte Value)
+{
   SERIAL_USED.print("CC : ch ");
   SERIAL_USED.print(Channel, DEC);
   SERIAL_USED.print(" nr ");
@@ -70,6 +86,11 @@ void OnControlChange(byte Channel, byte Number, byte Value)
 }
 
 void OnPitchBend(byte Channel, int Bend)
+{
+  LogPitchBend(Channel, Bend);
+}
+  
+void LogPitchBend(byte Channel, int Bend)
 {
   SERIAL_USED.print("PitchBend : ch ");
   SERIAL_USED.print(Channel, DEC);
@@ -88,6 +109,7 @@ void setup() {
   usbMIDI.setHandleNoteOff(OnNoteOff);
   usbMIDI.setHandleControlChange(OnControlChange);
   usbMIDI.setHandlePitchChange(OnPitchBend);
+  mcp48_begin();
 
   //debug/diagnostics/tests
   SpeedTest();
