@@ -11,12 +11,25 @@ template<int Scale>
 class CSimpleOscillator
 {
 public:
+    CSimpleOscillator()
+        : m_SamplingFrequency(40000)
+        , m_PhaseGen(0)
+        , m_CurrentOperator()
+    {
+        SelectOperator(0);
+    }
+
     CSimpleOscillator(uint64_t SamplingFrequency)
         : m_SamplingFrequency(SamplingFrequency)
         , m_PhaseGen(0)
         , m_CurrentOperator()
     {
         SelectOperator(0);
+    }
+
+    void SetSamplingFrequency(uint64_t SamplingFrequency)
+    {
+        m_SamplingFrequency = SamplingFrequency;
     }
 
     void SelectOperator(int Selected)
@@ -40,7 +53,7 @@ public:
     }
 
 private:
-    const uint64_t m_SamplingFrequency;
+    uint64_t m_SamplingFrequency;
     CIntegerPhaseGenerator<int, Scale> m_PhaseGen;
     IntOperator m_CurrentOperator;
 };

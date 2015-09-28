@@ -12,7 +12,7 @@
 const int SamplingFrequency = 40000;
 const int IntScale = 12;
 
-isl::CSimpleOscillator<IntScale> g_Oscillator(SamplingFrequency);
+isl::CSimpleOscillator<IntScale> g_Oscillator;
 int g_Envelope;
 int g_MidiNote;
 
@@ -98,6 +98,9 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   { // oscillator selection
     int SelectedOperator = Value*isl::COperatorFactory<IntScale>::NumOperators/128;
     g_Oscillator.SelectOperator(SelectedOperator);
+
+    SERIAL_USED.print("Selected operator ");
+    SERIAL_USED.println(SelectedOperator);
   }
 }
 
@@ -131,7 +134,8 @@ void setup() {
   
   SERIAL_USED.println("Teensy Midi Synth 1...");
 
-  g_Envelope = 1;
+  g_Oscillator.SetSamplingFrequency(SamplingFrequency);
+  g_Envelope = 0;
   g_MidiNote = 0;
   
   usbMIDI.setHandleNoteOn(OnNoteOn);
