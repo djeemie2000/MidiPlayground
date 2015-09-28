@@ -17,6 +17,7 @@ public:
         , m_CurrentOperator()
     {
         SelectOperator(0);
+	SetFrequency(110*1000);
     }
 
     CSimpleOscillator(uint64_t SamplingFrequency)
@@ -25,6 +26,7 @@ public:
         , m_CurrentOperator()
     {
         SelectOperator(0);
+	SetFrequency(110*1000);
     }
 
     void SetSamplingFrequency(uint64_t SamplingFrequency)
