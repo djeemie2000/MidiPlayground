@@ -4,21 +4,26 @@
 #include "MidiNoteFrequencies.h"
 #include "TimerOne.h"
 #include "IntSimpleOscillator.h"
+#include "IntOperatorFactory.h"
+#include "TimerOne.h"
 
 #define SERIAL_USED Serial1
 
 const int SamplingFrequency = 40000;
 const int IntScale = 12;
-isl::CSimpleOscillator<IntScale> g_Oscillator(SamplingFrequency);
 
-void OnTimer()
+isl::CSimpleOscillator<IntScale> g_Oscillator(SamplingFrequency);
+int g_Envelope;
+int g_MidiNote;
+
+void WriteDac()
 {
   mcp48_setOutput(CalcDacValue());
 }
 
 int CalcDacValue()
 {
-  return 2048 + g_Oscillator();
+  return 2048 + g_Envelope * g_Oscillator();
 }
 
 void SpeedTest()
@@ -29,7 +34,7 @@ void SpeedTest()
   for(int idx = 0; idx<SamplingFrequency; ++idx)
   {
     bs += CalcDacValue();
-    //OnTimer();
+    //WriteDac();
   }
   unsigned long After = millis();
   SERIAL_USED.print("Repeat x ");
@@ -37,12 +42,21 @@ void SpeedTest()
   SERIAL_USED.print(" = ");
   SERIAL_USED.print(After-Before);
   SERIAL_USED.println(" mSec");
-  
 }
 
 void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
   LogNoteOn(Channel, Note, Velocity);
+
+  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(Note);
+  g_Oscillator.SetFrequency(FreqMilliHz);
+  // sync upon note on, continue when changing freq
+  if(g_Envelope==0)
+  {
+    g_Envelope = 1;
+    g_Oscillator.Sync();
+  }
+  g_MidiNote = Note;
 }
 
 void LogNoteOn(byte Channel, byte Note, byte Velocity)
@@ -58,6 +72,12 @@ void LogNoteOn(byte Channel, byte Note, byte Velocity)
 void OnNoteOff(byte Channel, byte Note, byte Velocity)
 {
   LogNoteOff(Channel, Note, Velocity);
+  // note off only for most recent note on
+  if(Note == g_MidiNote)
+  {
+    g_Envelope = 0;
+    g_MidiNote = 0;
+  }
 }
 
 void LogNoteOff(byte Channel, byte Note, byte Velocity)
@@ -73,6 +93,12 @@ void LogNoteOff(byte Channel, byte Note, byte Velocity)
 void OnControlChange(byte Channel, byte Number, byte Value)
 {
   LogControlChange(Channel, Number, Value);
+  
+  if(Number == 17)
+  { // oscillator selection
+    int SelectedOperator = Value*isl::COperatorFactory<IntScale>::NumOperators/128;
+    g_Oscillator.SelectOperator(SelectedOperator);
+  }
 }
 
 void LogControlChange(byte Channel, byte Number, byte Value)
@@ -104,6 +130,9 @@ void setup() {
   delay(1000);//?
   
   SERIAL_USED.println("Teensy Midi Synth 1...");
+
+  g_Envelope = 1;
+  g_MidiNote = 0;
   
   usbMIDI.setHandleNoteOn(OnNoteOn);
   usbMIDI.setHandleNoteOff(OnNoteOff);
@@ -115,7 +144,17 @@ void setup() {
   SpeedTest();
   
   pinMode(13, OUTPUT);
+
+  const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
+  SERIAL_USED.print("Fs=");
+  SERIAL_USED.print(SamplingFrequency);
+  SERIAL_USED.print(" Period=");
+  SERIAL_USED.print(PeriodMicroSeconds);
+  SERIAL_USED.println(" uSec");
+  
   SERIAL_USED.println("Starting..");
+  Timer1.initialize(PeriodMicroSeconds);
+  Timer1.attachInterrupt(WriteDac);
 }
 
 void loop() {

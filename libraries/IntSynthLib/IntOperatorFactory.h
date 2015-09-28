@@ -11,6 +11,8 @@ template<int Scale>
 class COperatorFactory
 {
 public:
+    static const int NumOperators = 8;
+
     static IntOperator GetOperator(int Selected)
     {
         if(Selected == 0)
