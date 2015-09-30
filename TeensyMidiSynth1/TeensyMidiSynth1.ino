@@ -16,6 +16,7 @@ const int NumOscillators = 16;
 isl::CSimpleOscillator<IntScale> g_Oscillator[NumOscillators];
 int g_Envelope[NumOscillators];
 int g_MidiNote[NumOscillators];
+int g_ActivationCounter[NumOscillators];
 int g_NoteOnCounter;
 
 void WriteDac()
@@ -63,12 +64,18 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
   LogNoteOn(Channel, Note, Velocity);
 
   ++g_NoteOnCounter;
-  for(int idx = 0; idx<NumOscillators; ++idx)
+  bool Done = false;
+  for(int idx = 0; !Done && idx<NumOscillators; ++idx)
   {
-    g_Envelope[idx] = 1;
-    g_MidiNote[idx] = Note-idx;
-    int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_MidiNote[idx]);
-    g_Oscillator[idx].SetFrequency(FreqMilliHz);
+    if(g_ActivationCounter[idx]==-1)
+    {
+      g_Envelope[idx] = 1;
+      g_MidiNote[idx] = Note;
+      g_ActivationCounter[idx] = g_NoteOnCounter;
+      int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_MidiNote[idx]);
+      g_Oscillator[idx].SetFrequency(FreqMilliHz);
+      Done = true;
+    }
   }
 }
 
@@ -88,10 +95,11 @@ void OnNoteOff(byte Channel, byte Note, byte Velocity)
   // note off only for most recent note on
   for(int idx = 0; idx<NumOscillators; ++idx)
   {
-    if(Note-idx == g_MidiNote[idx])
+    if(Note == g_MidiNote[idx])
     {
       g_Envelope[idx] = 0;
       g_MidiNote[idx] = 0;
+      g_ActivationCounter[idx] = -1;
     }
   }
 }
@@ -173,6 +181,7 @@ void setup()
     g_Oscillator[idx].SelectOperator(6);
     g_Envelope[idx] = 0;
     g_MidiNote[idx] = 0;
+    g_ActivationCounter[idx] = -1;
   }
 
   mcp48_begin();
