@@ -11,9 +11,12 @@
 const int SamplingFrequency = 40000;
 const int IntScale = 12;
 
-isl::CSimpleOscillator<IntScale> g_Oscillator;
-int g_Envelope;
-int g_MidiNote;
+const int NumOscillators = 16;
+
+isl::CSimpleOscillator<IntScale> g_Oscillator[NumOscillators];
+int g_Envelope[NumOscillators];
+int g_MidiNote[NumOscillators];
+int g_NoteOnCounter;
 
 void WriteDac()
 {
@@ -26,7 +29,14 @@ int CalcDacValue()
   //Val = (Val+1)%4096;
   //return Val;
 
-  return 2048 + g_Envelope * (7*g_Oscillator()>>3);
+  int Val = 0;
+  for(int idx = 0; idx<NumOscillators; ++idx)
+  {
+    Val +=  g_Envelope[idx] * g_Oscillator[idx](); 
+  }
+  Val /= NumOscillators;
+
+  return 2048 + 7*Val/8;
 }
 
 void SpeedTest()
@@ -52,15 +62,14 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
   LogNoteOn(Channel, Note, Velocity);
 
-  int FreqMilliHz = GetMidiNoteFrequencyMilliHz(Note);
-  g_Oscillator.SetFrequency(FreqMilliHz);
-  // sync upon note on, continue when changing freq
-  if(g_Envelope==0)
+  ++g_NoteOnCounter;
+  for(int idx = 0; idx<NumOscillators; ++idx)
   {
-    g_Envelope = 1;
-    g_Oscillator.Sync();
+    g_Envelope[idx] = 1;
+    g_MidiNote[idx] = Note-idx;
+    int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_MidiNote[idx]);
+    g_Oscillator[idx].SetFrequency(FreqMilliHz);
   }
-  g_MidiNote = Note;
 }
 
 void LogNoteOn(byte Channel, byte Note, byte Velocity)
@@ -77,10 +86,13 @@ void OnNoteOff(byte Channel, byte Note, byte Velocity)
 {
   LogNoteOff(Channel, Note, Velocity);
   // note off only for most recent note on
-  if(Note == g_MidiNote)
+  for(int idx = 0; idx<NumOscillators; ++idx)
   {
-    g_Envelope = 0;
-    g_MidiNote = 0;
+    if(Note-idx == g_MidiNote[idx])
+    {
+      g_Envelope[idx] = 0;
+      g_MidiNote[idx] = 0;
+    }
   }
 }
 
@@ -101,8 +113,10 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   if(Number == 17)
   { // oscillator selection
     int SelectedOperator = Value*isl::COperatorFactory<IntScale>::NumOperators/128;
-    g_Oscillator.SelectOperator(SelectedOperator);
-
+    for(int idx = 0; idx<NumOscillators; ++idx)
+    {
+      g_Oscillator[idx].SelectOperator(SelectedOperator);
+    }
     SERIAL_USED.print("Selected operator ");
     SERIAL_USED.println(SelectedOperator);
   }
@@ -151,11 +165,15 @@ void setup()
 
   SERIAL_USED.println("Teensy Midi Synth 1...");
 
-  g_Oscillator.SetSamplingFrequency(SamplingFrequency);
-  g_Oscillator.SetFrequency(220 * 1000);
-  g_Oscillator.SelectOperator(6);
-  g_Envelope = 0;
-  g_MidiNote = 0;
+  g_NoteOnCounter = 0;
+  for(int idx = 0; idx<NumOscillators; ++idx)
+  {
+    g_Oscillator[idx].SetSamplingFrequency(SamplingFrequency);
+    g_Oscillator[idx].SetFrequency(220 * 1000);
+    g_Oscillator[idx].SelectOperator(6);
+    g_Envelope[idx] = 0;
+    g_MidiNote[idx] = 0;
+  }
 
   mcp48_begin();
   mcp48_setOutput(0);
