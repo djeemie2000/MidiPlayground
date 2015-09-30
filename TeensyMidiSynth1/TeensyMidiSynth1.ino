@@ -2,7 +2,6 @@
 #include "spi4teensy3.h"
 #include "TeensyMcpDac.h"
 #include "MidiNoteFrequencies.h"
-#include "TimerOne.h"
 #include "IntSimpleOscillator.h"
 #include "IntOperatorFactory.h"
 #include "TimerOne.h"
@@ -23,7 +22,11 @@ void WriteDac()
 
 int CalcDacValue()
 {
-  return 2048 + g_Envelope * g_Oscillator();
+  //static int Val = 0;
+  //Val = (Val+1)%4096;
+  //return Val;
+
+  return 2048 + g_Envelope * (7*g_Oscillator()>>3);
 }
 
 void SpeedTest()
@@ -37,10 +40,11 @@ void SpeedTest()
     //WriteDac();
   }
   unsigned long After = millis();
+  unsigned long Duration = After - Before;
   SERIAL_USED.print("Repeat x ");
   SERIAL_USED.print(SamplingFrequency);
   SERIAL_USED.print(" = ");
-  SERIAL_USED.print(After-Before);
+  SERIAL_USED.print(Duration);
   SERIAL_USED.println(" mSec");
 }
 
@@ -93,7 +97,7 @@ void LogNoteOff(byte Channel, byte Note, byte Velocity)
 void OnControlChange(byte Channel, byte Number, byte Value)
 {
   LogControlChange(Channel, Number, Value);
-  
+
   if(Number == 17)
   { // oscillator selection
     int SelectedOperator = Value*isl::COperatorFactory<IntScale>::NumOperators/128;
@@ -127,28 +131,46 @@ void LogPitchBend(byte Channel, int Bend)
   SERIAL_USED.println(Bend);
 }
 
-void setup() {
+void TestDacValue()
+{
+  SERIAL_USED.println("Test DacValue...");
+  for(int idx = 0; idx<SamplingFrequency/10; ++idx)
+  {
+    SERIAL_USED.print(idx);
+    SERIAL_USED.print(" : ");
+    SERIAL_USED.println(CalcDacValue());
+  }
+  SERIAL_USED.println("Done");
+}
+
+void setup() 
+{
   // put your setup code here, to run once:
   SERIAL_USED.begin(115200);
-  delay(1000);//?
-  
+  delay(1000);
+
   SERIAL_USED.println("Teensy Midi Synth 1...");
 
   g_Oscillator.SetSamplingFrequency(SamplingFrequency);
+  g_Oscillator.SetFrequency(220 * 1000);
+  g_Oscillator.SelectOperator(6);
   g_Envelope = 0;
   g_MidiNote = 0;
-  
+
+  mcp48_begin();
+  mcp48_setOutput(0);
+  delay(100);
+
   usbMIDI.setHandleNoteOn(OnNoteOn);
   usbMIDI.setHandleNoteOff(OnNoteOff);
   usbMIDI.setHandleControlChange(OnControlChange);
   usbMIDI.setHandlePitchChange(OnPitchBend);
-  mcp48_begin();
 
   //debug/diagnostics/tests
   SpeedTest();
-  
-  pinMode(13, OUTPUT);
+  //TestDacValue();
 
+  //
   const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
   SERIAL_USED.print("Fs=");
   SERIAL_USED.print(SamplingFrequency);
@@ -156,16 +178,14 @@ void setup() {
   SERIAL_USED.print(PeriodMicroSeconds);
   SERIAL_USED.println(" uSec");
   
-  SERIAL_USED.println("Starting..");
+  SERIAL_USED.println("Starting...");
   Timer1.initialize(PeriodMicroSeconds);
   Timer1.attachInterrupt(WriteDac);
 }
 
-void loop() {
+void loop() 
+{
   // put your main code here, to run repeatedly:
-  for(int Repeat = 0; Repeat<100000; ++Repeat)
-  {
     usbMIDI.read();
-  }
-  //SERIAL_USED.println("Midi read 100000x");
 }
+

@@ -1,43 +1,52 @@
 #include <SPI.h>
 #include "spi4teensy3.h"
 #include "TeensyMcpDac.h"
-#include "TimerOne.h"
+#include "MidiNoteFrequencies.h"
 #include "IntSimpleOscillator.h"
 #include "IntOperatorFactory.h"
-#include "MidiNoteFrequencies.h"
+#include "TimerOne.h"
 
 #define SERIAL_USED Serial1
 
 const int SamplingFrequency = 40000;
 const int IntScale = 12;
-isl::CSimpleOscillator<IntScale> g_Oscillator;
 
-void TestSpeed()
+isl::CSimpleOscillator<IntScale> g_Oscillator;
+int g_Envelope;
+int g_MidiNote;
+
+void WriteDac()
 {
-  Serial1.println("Test speed...");
+  mcp48_setOutput(CalcDacValue());
+}
+
+int CalcDacValue()
+{
+  //static int Val = 0;
+  //Val = (Val+1)%4096;
+  //return Val;
+
+  return 2048 + (7*g_Oscillator()>>3);
+}
+
+void SpeedTest()
+{
+  SERIAL_USED.println("SpeedTest...");
   unsigned long Before = millis();
-  const int NumRepeats = SamplingFrequency;
-  for (int Value = 0; Value < NumRepeats; ++Value)
+  int bs = 0;
+  for(int idx = 0; idx<SamplingFrequency; ++idx)
   {
-    mcp48_setOutput(Value % 4096);
+    bs += CalcDacValue();
+    //WriteDac();
   }
   unsigned long After = millis();
   unsigned long Duration = After - Before;
-  Serial1.print(NumRepeats);
-  Serial1.print(" x = ");
-  Serial1.print(Duration);
-  Serial1.println(" mSec");
-
+  SERIAL_USED.print("Repeat x ");
+  SERIAL_USED.print(SamplingFrequency);
+  SERIAL_USED.print(" = ");
+  SERIAL_USED.print(Duration);
+  SERIAL_USED.println(" mSec");
 }
-
-void TestSaw()
-{
-  for (int Value = 0; Value < 4096; Value += 4)
-  {
-    mcp48_setOutput(Value);
-  }
-}
-
 
 void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
@@ -100,7 +109,7 @@ void OnPitchBend(byte Channel, int Bend)
 {
   LogPitchBend(Channel, Bend);
 }
-
+  
 void LogPitchBend(byte Channel, int Bend)
 {
   SERIAL_USED.print("PitchBend : ch ");
@@ -109,49 +118,33 @@ void LogPitchBend(byte Channel, int Bend)
   SERIAL_USED.println(Bend);
 }
 
-void WriteDac()
+void TestDacValue()
 {
-  //static int DacValue = 0;
-  //DacValue = (DacValue + 16)%4096;
-  //mcp48_setOutput(DacValue);
-  mcp48_setOutput(2048 + (7*g_Oscillator()>>3));
+  SERIAL_USED.println("Test DacValue...");
+  for(int idx = 0; idx<SamplingFrequency/10; ++idx)
+  {
+    SERIAL_USED.print(idx);
+    SERIAL_USED.print(" : ");
+    SERIAL_USED.println(CalcDacValue());
+  }
+  SERIAL_USED.println("Done");
 }
 
-//void TestSawInterrupt()
-//{
-//  const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
-//  SERIAL_USED.print("Fs=");
-//  SERIAL_USED.print(SamplingFrequency);
-//  SERIAL_USED.print(" Period=");
-//  SERIAL_USED.print(PeriodMicroSeconds);
-//  SERIAL_USED.println(" uSec");
-//
-//  SERIAL_USED.println("Starting...");
-//  Timer1.initialize(PeriodMicroSeconds);
-//  Timer1.attachInterrupt(WriteDac);
-//  //delay(1000);
-//  while (true)
-//  {
-//    for (int idx = 0; idx < 400 * 1000; ++idx)
-//    {
-//      usbMIDI.read();
-//      //delay(1);
-//    }
-//    //static int Sel = 0;
-//    //Sel = (Sel+1)%8;
-//    //g_Oscillator.SelectOperator(Sel);
-//  }
-//  Timer1.detachInterrupt();
-//  delay(1000);
-//}
+void TestSaw()
+{
+  for (int Value = 0; Value < 4096; Value += 4)
+  {
+    mcp48_setOutput(Value);
+  }
+}
 
-void setup() {
+void setup() 
+{
   // put your setup code here, to run once:
   SERIAL_USED.begin(115200);
   delay(1000);
-  SERIAL_USED.println("Teensy mcp4822 synth test...");
 
-  analogReadResolution(12);
+  SERIAL_USED.println("Teensy mcp4822 synth test...");
 
   g_Oscillator.SetSamplingFrequency(SamplingFrequency);
   g_Oscillator.SetFrequency(220 * 1000);
@@ -167,7 +160,11 @@ void setup() {
   usbMIDI.setHandleControlChange(OnControlChange);
   usbMIDI.setHandlePitchChange(OnPitchBend);
 
-  //  
+  //debug/diagnostics/tests
+  SpeedTest();
+  //TestDacValue();
+
+  //
   const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
   SERIAL_USED.print("Fs=");
   SERIAL_USED.print(SamplingFrequency);
@@ -178,7 +175,6 @@ void setup() {
   SERIAL_USED.println("Starting...");
   Timer1.initialize(PeriodMicroSeconds);
   Timer1.attachInterrupt(WriteDac);
-
 }
 
 void loop() {
