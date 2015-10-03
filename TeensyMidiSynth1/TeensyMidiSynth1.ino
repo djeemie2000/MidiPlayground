@@ -4,6 +4,7 @@
 #include "MidiNoteFrequencies.h"
 #include "IntSimpleOscillator.h"
 #include "IntOperatorFactory.h"
+#include "IntEnvelope.h"
 #include "TimerOne.h"
 
 #define SERIAL_USED Serial1
@@ -14,9 +15,10 @@ const int IntScale = 12;
 const int NumOscillators = 16;
 
 isl::CSimpleOscillator<IntScale> g_Oscillator[NumOscillators];
-int g_Envelope[NumOscillators];
+//int g_Envelope[NumOscillators];
 int g_MidiNote[NumOscillators];
 int g_ActivationCounter[NumOscillators];
+isl::CIntegerAHREnvelope<int, 7> g_Envelope[NumOscillators];
 int g_NoteOnCounter;
 
 void WriteDac()
@@ -33,7 +35,7 @@ int CalcDacValue()
   int Val = 0;
   for(int idx = 0; idx<NumOscillators; ++idx)
   {
-    Val +=  g_Envelope[idx] * g_Oscillator[idx](); 
+    Val +=  ( (g_Envelope[idx]() * g_Oscillator[idx]()) >> 7); 
   }
   Val /= NumOscillators;
 
@@ -69,7 +71,7 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
   {
     if(g_ActivationCounter[idx]==-1)
     {
-      g_Envelope[idx] = 1;
+      g_Envelope[idx].NoteOn();// = 1;
       g_MidiNote[idx] = Note;
       g_ActivationCounter[idx] = g_NoteOnCounter;
       int FreqMilliHz = GetMidiNoteFrequencyMilliHz(g_MidiNote[idx]);
@@ -97,7 +99,7 @@ void OnNoteOff(byte Channel, byte Note, byte Velocity)
   {
     if(Note == g_MidiNote[idx])
     {
-      g_Envelope[idx] = 0;
+      g_Envelope[idx].NoteOff();// = 0;
       g_MidiNote[idx] = 0;
       g_ActivationCounter[idx] = -1;
     }
@@ -179,7 +181,9 @@ void setup()
     g_Oscillator[idx].SetSamplingFrequency(SamplingFrequency);
     g_Oscillator[idx].SetFrequency(220 * 1000);
     g_Oscillator[idx].SelectOperator(6);
-    g_Envelope[idx] = 0;
+    g_Envelope[idx].SetAttack(SamplingFrequency, 100);
+    g_Envelope[idx].SetRelease(SamplingFrequency, 900);
+    //g_Envelope[idx] = 0;
     g_MidiNote[idx] = 0;
     g_ActivationCounter[idx] = -1;
   }
