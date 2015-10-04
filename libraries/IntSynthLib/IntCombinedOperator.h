@@ -13,6 +13,8 @@ template<int Scale>
 class CIntCombinedOperator
 {
 public:
+    static const int NumOperators = 8;
+
     CIntCombinedOperator(uint64_t SamplingFrequency)
         : m_SamplingFrequencyHz(SamplingFrequency)
         , m_PhaseGenA()
@@ -30,6 +32,12 @@ public:
         , m_FrequencyMultiplierScaleB(8)
         , m_FrequencyMultiplierValueC(1<<8)
         , m_FrequencyMultiplierScaleC(8)
+        , m_AmplitudeValueA(1<<8)
+        , m_AmplitudeScaleA(8)
+        , m_AmplitudeValueB(1<<8)
+        , m_AmplitudeScaleB(8)
+        , m_AmplitudeValueC(1<<8)
+        , m_AmplitudeScaleC(8)
     {
         UpdateFrequency();
         SelectCombinor1(0);
@@ -37,6 +45,43 @@ public:
         SelectOperatorA(0);
         SelectOperatorB(0);
         SelectOperatorC(0);
+    }
+
+CIntCombinedOperator()
+        : m_SamplingFrequencyHz(40000)
+        , m_PhaseGenA()
+        , m_PhaseGenB()
+        , m_PhaseGenC()
+        , m_OperatorA( GetOperator(0) )
+        , m_OperatorB( GetOperator(0) )
+        , m_OperatorC( GetOperator(0) )
+        , m_Combinor1( IntAdd<int, Scale> )
+        , m_Combinor2( IntAdd<int, Scale> )
+        , m_FrequencyMilliHz(110*1000)
+        , m_FrequencyMultiplierValueA(1<<8)
+        , m_FrequencyMultiplierScaleA(8)
+        , m_FrequencyMultiplierValueB(1<<8)
+        , m_FrequencyMultiplierScaleB(8)
+        , m_FrequencyMultiplierValueC(1<<8)
+        , m_FrequencyMultiplierScaleC(8)
+        , m_AmplitudeValueA(1<<8)
+        , m_AmplitudeScaleA(8)
+        , m_AmplitudeValueB(1<<8)
+        , m_AmplitudeScaleB(8)
+        , m_AmplitudeValueC(1<<8)
+        , m_AmplitudeScaleC(8)
+    {
+        UpdateFrequency();
+        SelectCombinor1(0);
+        SelectCombinor2(0);
+        SelectOperatorA(0);
+        SelectOperatorB(0);
+        SelectOperatorC(0);
+    }
+
+    void SetSamplingFrequency(uint64_t SamplingFrequency)
+    {
+	m_SamplingFrequencyHz = SamplingFrequency;
     }
 
     void Sync()
@@ -80,6 +125,24 @@ public:
                                  m_FrequencyMilliHz*m_FrequencyMultiplierValueC >> m_FrequencyMultiplierScaleC);
     }
 
+    void SetAmplitudeA(int Amplitude, int AmplitudeScale)
+    {
+        m_AmplitudeValueA = Amplitude;
+        m_AmplitudeScaleA = AmplitudeScale;
+    }
+
+    void SetAmplitudeB(int Amplitude, int AmplitudeScale)
+    {
+        m_AmplitudeValueB = Amplitude;
+        m_AmplitudeScaleB = AmplitudeScale;
+    }
+
+    void SetAmplitudeC(int Amplitude, int AmplitudeScale)
+    {
+        m_AmplitudeValueC = Amplitude;
+        m_AmplitudeScaleC = AmplitudeScale;
+    }
+
     void SelectOperatorA(int Idx)
     {
         m_OperatorA = GetOperator(Idx);
@@ -107,8 +170,8 @@ public:
 
     int operator()()
     {
-        return m_Combinor2( m_Combinor1(m_OperatorA(m_PhaseGenA()), m_OperatorB(m_PhaseGenB())),
-                            m_OperatorC(m_PhaseGenC()) );
+        return m_Combinor2( m_Combinor1(m_AmplitudeValueA*m_OperatorA(m_PhaseGenA())>>m_AmplitudeScaleA, m_AmplitudeValueB*m_OperatorB(m_PhaseGenB())>>m_AmplitudeScaleB),
+                            m_AmplitudeValueC*m_OperatorC(m_PhaseGenC())>>m_AmplitudeScaleC );
     }
 
     //static std::vector<std::string> GetOperatorNames()
@@ -166,7 +229,7 @@ private:
         m_PhaseGenC.SetFrequency(m_SamplingFrequencyHz, m_FrequencyMilliHz*m_FrequencyMultiplierValueC >> m_FrequencyMultiplierScaleC);
     }
 
-    const uint64_t m_SamplingFrequencyHz;
+    uint64_t m_SamplingFrequencyHz;
 
     CIntegerPhaseGenerator<int, Scale> m_PhaseGenA;
     CIntegerPhaseGenerator<int, Scale> m_PhaseGenB;
@@ -184,6 +247,13 @@ private:
     int m_FrequencyMultiplierScaleB;
     int m_FrequencyMultiplierValueC;
     int m_FrequencyMultiplierScaleC;
+
+    int m_AmplitudeValueA;
+    int m_AmplitudeScaleA;
+    int m_AmplitudeValueB;
+    int m_AmplitudeScaleB;
+    int m_AmplitudeValueC;
+    int m_AmplitudeScaleC;
 };
 
 }//namespace isl

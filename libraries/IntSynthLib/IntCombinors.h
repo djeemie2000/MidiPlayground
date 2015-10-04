@@ -1,10 +1,13 @@
 #pragma once
 
-#include <cmath>
+#include <math.h>
 #include "IntOperators.h"
 
 namespace isl
 {
+
+//using std::max;
+//using std::min;
 
 typedef int(*IntCombinor)(int, int);
 
@@ -47,6 +50,12 @@ template<class T, int Scale>
 T IntMultUnipolar(T In1, T In2)
 {
     return IntUnipolarToBipolar<Scale>( IntMult<T, Scale>(IntBipolarToUnipolar<Scale>(In1), IntBipolarToUnipolar<Scale>(In2)) );
+}
+
+template<class T, int Scale>
+T IntMultAbs(T In1, T In2)
+{
+    return IntUnipolarToBipolar<Scale>( IntMult<T, Scale>(abs(In1), abs(In2)) );
 }
 
 template<class T, int Scale>
@@ -114,6 +123,18 @@ template<class T, int Scale>
 T IntMin(T In1, T In2)
 {
     return min(In1, In2);
+}
+
+template<class T, int Scale>
+T IntMinAbsFirst(T In1, T In2)
+{
+    return min(abs(In1), In2);
+}
+
+template<class T, int Scale>
+T IntMinAbsSecond(T In1, T In2)
+{
+    return min(In1, abs(In2));
 }
 
 template<class T, int Scale>

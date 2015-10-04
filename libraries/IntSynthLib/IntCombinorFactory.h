@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
-#include <string>
+//#include <vector>
+//#include <string>
 #include "IntCombinors.h"
 
 namespace isl
@@ -11,6 +11,8 @@ template<int Scale>
 class CCombinorFactory
 {
 public:
+    static const int NumCombinors = 21;
+
     static IntCombinor GetOperator(int Selected)
     {
         if(Selected == 0)
@@ -51,7 +53,7 @@ public:
         }
         else if(Selected == 9)
         {
-            return IntDiffAbs<int, Scale>;// -||
+            return IntDiffAbs<int, Scale>;// |A|-|B|
         }
         else if(Selected == 10)
         {
@@ -85,20 +87,34 @@ public:
         {
             return IntMultMod2<int, Scale>;// B(1+A)
         }
+        else if(Selected == 18)
+        {
+            return IntMultAbs<int, Scale>;// |A|*|B|
+        }
+        else if(Selected == 19)
+        {
+            return IntMinAbsFirst<int, Scale>;// m|A|B
+        }
+        else if(Selected == 20)
+        {
+            return IntMinAbsSecond<int, Scale>;// mA|B|
+        }
         //default
         return IntAdd<int, Scale>;
     }
 
-    static std::vector<std::string> AvailableOperatorNames()
-    {
-        return { "+", "+L",
-            "*A", "*B", "*",
-            "RA", "RB", "*U",
-            "-L", "-||",
-            "M||","m||","M","m",
-            "P+N", "N+P",
-            "A(1+B)", "B(1+A)" };
-    }
+    //static std::vector<std::string> AvailableOperatorNames()
+    //{
+    //    return { "A+B", "LA+B",
+    //        "A*|B|", "B*|A|", "*",
+    //        "A*UB", "B*UA", "UA*UB",
+    //        "LA-B", "|A|-|B|",
+    //        "M||","m||","M","m",
+    //        "P+N", "N+P",
+    //        "A(1+B)", "B(1+A)",
+    //        "|A|*|B|",
+    //        "mB|A|", "mA|B|"};
+    //}
 };
 
 }//namespace isl
