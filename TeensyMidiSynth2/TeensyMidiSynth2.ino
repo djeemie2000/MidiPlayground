@@ -22,7 +22,10 @@ int g_NoteOnCounter;
 
 void WriteDac()
 {
-  mcp48_setOutput(CalcDacValue());
+  int Val = CalcDacValue();
+  //mcp48_setOutput(CalcDacValue());
+  mcp48_setOutput(0, GAIN_1, 1, Val);
+  mcp48_setOutput(1, GAIN_1, 1, Val);  
 }
 
 int CalcDacValue()
