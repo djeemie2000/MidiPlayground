@@ -66,7 +66,7 @@ public:
             Out += m_Operator[idx](Excite);
         }
 
-        return (Out-m_DCOffset(Out))/2;// Out/NumOperators;//??? what is a good normalisation???
+        return (Out-m_DCOffset(Out));///2;// Out/NumOperators;//??? what is a good normalisation???
     }
 
 

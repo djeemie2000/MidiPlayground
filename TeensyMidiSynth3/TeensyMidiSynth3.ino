@@ -7,12 +7,14 @@
 
 #define SERIAL_USED Serial1
 
-const int SamplingFrequency = 40000;
+//Note: reducing the sampling frequency to save RAM is certainly an option!
+const int SamplingFrequency = 20000;
 const int IntScale = 12;
 
-const int NumOscillators = 8;
+const int NumOscillators = 12;
+const int MinFrequencyHz = 25;
 
-isl::CKarplusStrong<int, IntScale, SamplingFrequency/30, NumOscillators> g_Oscillator;
+isl::CKarplusStrong<int, IntScale, SamplingFrequency/MinFrequencyHz, NumOscillators> g_Oscillator;
 int g_Damp;
 int g_Excite;
 int g_NoteOnCounter;
@@ -32,8 +34,19 @@ int CalcDacValue()
   //return Val;
 
   int Val = g_Oscillator(); 
+
+  Val = 2048 + 7*Val/16;
+
+  if(Val<0)
+  {
+    Val = 0;
+  }
+  else if(4095<Val)
+  {
+    Val = 4095;
+  }
  
-  return 2048 + 7*Val/8;
+  return Val;
 }
 
 void SpeedTest()
