@@ -6,7 +6,7 @@ static const int MaxMidiNoteNumber = 127;
 
 
 
-int MidiNoteFrequencyMilliHz[] = {
+static const int MidiNoteFrequencyMilliHz[] = {
   8175,// C-1
   8661,
   9177,
