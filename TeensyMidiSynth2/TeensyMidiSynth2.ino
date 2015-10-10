@@ -63,6 +63,23 @@ void SpeedTest()
   SERIAL_USED.println(" mSec");
 }
 
+void SpeedTestWriteDac()
+{
+  SERIAL_USED.println("SpeedTest write Dac...");
+  unsigned long Before = millis();
+  for(int idx = 0; idx<SamplingFrequency; ++idx)
+  {
+    WriteDac();
+  }
+  unsigned long After = millis();
+  unsigned long Duration = After - Before;
+  SERIAL_USED.print("Repeat x ");
+  SERIAL_USED.print(SamplingFrequency);
+  SERIAL_USED.print(" = ");
+  SERIAL_USED.print(Duration);
+  SERIAL_USED.println(" mSec");
+}
+
 void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
   LogNoteOn(Channel, Note, Velocity);
@@ -276,6 +293,7 @@ void setup()
 
   //debug/diagnostics/tests
   SpeedTest();
+  SpeedTestWriteDac();
   //TestDacValue();
 
   //
