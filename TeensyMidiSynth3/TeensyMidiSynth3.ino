@@ -3,6 +3,7 @@
 #include "TeensyMcpDac.h"
 #include "MidiNoteFrequencies.h"
 #include "IntKarplusStrong.h"
+#include "IntFeedbackDelay.h"
 #include "TimerOne.h"
 
 #define SERIAL_USED Serial1
@@ -18,23 +19,24 @@ isl::CKarplusStrong<int, IntScale, SamplingFrequency/MinFrequencyHz, NumOscillat
 int g_Damp;
 int g_Excite;
 int g_NoteOnCounter;
+const int DelayCapacity = SamplingFrequency/20;
+isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayLeft;
+isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayRight;
+
+int g_ValLeft;
+int g_ValRight;
 
 void WriteDac()
 {
-  int Val = CalcDacValue();
+  //int Val = CalcDacValue();
   //mcp48_setOutput(CalcDacValue());
-  mcp48_setOutput(0, GAIN_1, 1, Val);
-  mcp48_setOutput(1, GAIN_1, 1, Val);  
+  CalcDacValue();
+  mcp48_setOutput(0, GAIN_1, 1, g_ValLeft);
+  mcp48_setOutput(1, GAIN_1, 1, g_ValRight);  
 }
 
-int CalcDacValue()
+void ClampAndScale(int& Val)
 {
-  //static int Val = 0;
-  //Val = (Val+1)%4096;
-  //return Val;
-
-  int Val = g_Oscillator(); 
-
   Val = 2048 + 7*Val/16;
 
   if(Val<0)
@@ -45,8 +47,33 @@ int CalcDacValue()
   {
     Val = 4095;
   }
+}
+
+void CalcDacValue()
+{
+  //static int Val = 0;
+  //Val = (Val+1)%4096;
+  //return Val;
+
+  int Val = g_Oscillator(); 
+
+  g_ValLeft = g_FeedbackDelayLeft(Val);
+  g_ValRight = g_FeedbackDelayRight(Val);
+
+  ClampAndScale(g_ValLeft);
+  ClampAndScale(g_ValRight);
+//  Val = 2048 + 7*Val/16;
+//
+//  if(Val<0)
+//  {
+//    Val = 0;
+//  }
+//  else if(4095<Val)
+//  {
+//    Val = 4095;
+//  }
  
-  return Val;
+  //return {ValLeft, ValRight};
 }
 
 void SpeedTest()
@@ -56,7 +83,8 @@ void SpeedTest()
   int bs = 0;
   for(int idx = 0; idx<SamplingFrequency; ++idx)
   {
-    bs += CalcDacValue();
+    //bs += 
+    CalcDacValue();
   }
   unsigned long After = millis();
   unsigned long Duration = After - Before;
@@ -133,9 +161,37 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   else if(Number == 18)
   { // damp 
     g_Excite = Value<<5;//2^7 to 2^12
-    SERIAL_USED.print("Selected Damp ");
-    SERIAL_USED.println(g_Damp);
+    SERIAL_USED.print("Selected Excite ");
+    SERIAL_USED.println(g_Excite);
   }
+  else if(Number == 21)
+  {
+    g_FeedbackDelayLeft.SetWetDry(Value, 7);
+    g_FeedbackDelayRight.SetWetDry(Value, 7);
+    SERIAL_USED.print("Selected Wet/Dry Left/Right ");
+    SERIAL_USED.println(Value);    
+  }  
+  else if(Number == 22)
+  {
+    int Delay = Value*DelayCapacity>>7;
+    g_FeedbackDelayLeft.SetDelay(Delay);
+    SERIAL_USED.print("Selected Delay Left ");
+    SERIAL_USED.println(Delay);
+  }
+  else if(Number == 23)
+  {
+    int Delay = Value*DelayCapacity>>7;
+    g_FeedbackDelayRight.SetDelay(Delay);
+    SERIAL_USED.print("Selected Delay Right ");
+    SERIAL_USED.println(Delay);    
+  }
+  else if(Number == 24)
+  {
+    g_FeedbackDelayLeft.SetFeedback(Value, 7);
+    g_FeedbackDelayRight.SetFeedback(Value, 7);
+    SERIAL_USED.print("Selected Feedback Left/Right ");
+    SERIAL_USED.println(Value);    
+  }  
 }
 
 void LogControlChange(byte Channel, byte Number, byte Value)
@@ -166,9 +222,12 @@ void TestDacValue()
   SERIAL_USED.println("Test DacValue...");
   for(int idx = 0; idx<SamplingFrequency/10; ++idx)
   {
+    CalcDacValue();
     SERIAL_USED.print(idx);
     SERIAL_USED.print(" : ");
-    SERIAL_USED.println(CalcDacValue());
+    SERIAL_USED.print(g_ValLeft);
+    SERIAL_USED.print(",");
+    SERIAL_USED.print(g_ValRight);    
   }
   SERIAL_USED.println("Done");
 }
@@ -185,7 +244,15 @@ void setup()
   g_Damp = 3072;//0.75*4096
   g_Excite = 2048;//0.5*4096
   g_Oscillator.SetSamplingFrequency(SamplingFrequency);
-
+  
+  g_FeedbackDelayLeft.SetDelay(SamplingFrequency*11/1000);
+  g_FeedbackDelayRight.SetDelay(SamplingFrequency*13/1000);
+  g_FeedbackDelayLeft.SetFeedback(125, 7);
+  g_FeedbackDelayRight.SetFeedback(125, 7);
+  g_FeedbackDelayLeft.SetWetDry(64, 7);
+  g_FeedbackDelayRight.SetWetDry(64, 7);
+  
+  
   mcp48_begin();
   mcp48_setOutput(0);
   delay(100);

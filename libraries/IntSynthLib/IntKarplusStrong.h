@@ -58,7 +58,7 @@ public:
 
     T operator()()
     {
-        T Excite = m_ExciterLPF(m_ExciterLPF(m_ExciterNoise()));
+        T Excite = m_ExciterLPF(m_ExciterLPF(m_ExciterLPF(m_ExciterLPF(m_ExciterNoise()))));
 
         T Out = 0;
         for(int idx = 0; idx<NumOperators; ++idx)
