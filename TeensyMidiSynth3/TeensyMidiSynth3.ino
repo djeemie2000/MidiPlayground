@@ -12,14 +12,14 @@
 const int SamplingFrequency = 20000;
 const int IntScale = 12;
 
-const int NumOscillators = 12;
+const int NumOscillators = 8;
 const int MinFrequencyHz = 25;
 
 isl::CKarplusStrong<int, IntScale, SamplingFrequency/MinFrequencyHz, NumOscillators> g_Oscillator;
 int g_Damp;
 int g_Excite;
 int g_NoteOnCounter;
-const int DelayCapacity = SamplingFrequency/20;
+const int DelayCapacity = SamplingFrequency/10;
 isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayLeft;
 isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayRight;
 
