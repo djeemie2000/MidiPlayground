@@ -14,6 +14,7 @@ class CControlChange
       for(int idx = 0; idx<Size; ++idx)
       {
         m_Value[idx] = 0;
+        m_Smooth[idx] = 0;
       }
     }
 
@@ -31,13 +32,15 @@ class CControlChange
     {
       if(0<=idx && idx<=Size)
       {
-        if(m_ChangeThreshold<abs(Value-m_Value[idx]))
+        m_Smooth[idx] = (3*m_Smooth[idx]+Value)/4;
+        
+        if(m_ChangeThreshold<abs(m_Smooth[idx]-m_Value[idx]))
         {
           if(m_ChangeCallback)
           {
-            m_ChangeCallback(idx, Value);
-            m_Value[idx] = Value;
+            m_ChangeCallback(idx, m_Smooth[idx]);
           }
+          m_Value[idx] = m_Smooth[idx];
         }
       }      
     }
@@ -52,6 +55,7 @@ class CControlChange
   }
     
   private:
+    T m_Smooth[Size];
     T m_Value[Size];
     T m_ChangeThreshold;
     ChangeCallback m_ChangeCallback;

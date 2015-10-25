@@ -329,7 +329,7 @@ void setup()
 
   analogReadResolution(10);
   g_ControlChange.SetChangeCallback(OnPotControlChange);
-  g_ControlChange.SetChangeThreshold(4);
+  g_ControlChange.SetChangeThreshold(1);
 
   mcp48_begin();
   mcp48_setOutput(0);
