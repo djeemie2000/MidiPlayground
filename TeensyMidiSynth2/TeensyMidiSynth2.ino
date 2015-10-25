@@ -1,3 +1,4 @@
+
 #include <SPI.h>
 #include "spi4teensy3.h"
 #include "TeensyMcpDac.h"
@@ -6,6 +7,7 @@
 #include "IntOperatorFactory.h"
 #include "IntEnvelope.h"
 #include "TimerOne.h"
+#include "ControlChange.h"
 
 #define SERIAL_USED Serial1
 
@@ -19,6 +21,10 @@ int g_Envelope[NumOscillators];
 int g_MidiNote[NumOscillators];
 int g_ActivationCounter[NumOscillators];
 int g_NoteOnCounter;
+
+const int NumPots = 8;
+const int AnalogInPin = A0;
+CControlChange<NumPots, int> g_ControlChange;
 
 void WriteDac()
 {
@@ -194,7 +200,7 @@ void OnControlChange(byte Channel, byte Number, byte Value)
     int Multiplier = 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, 7);
     }
     SERIAL_USED.print("Selected frequency multiplier A ");
     SERIAL_USED.println(Multiplier);
@@ -204,7 +210,7 @@ void OnControlChange(byte Channel, byte Number, byte Value)
     int Multiplier = 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, 7);
     }
     SERIAL_USED.print("Selected frequency multiplier B ");
     SERIAL_USED.println(Multiplier);
@@ -214,12 +220,51 @@ void OnControlChange(byte Channel, byte Number, byte Value)
     int Multiplier = 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, 7);
     }
     SERIAL_USED.print("Selected frequency multiplier C ");
     SERIAL_USED.println(Multiplier);
   }
 }
+
+void OnPotControlChange(int Number, int Value)
+{
+  SERIAL_USED.print("CC : Pot nr ");
+  SERIAL_USED.print(Number, DEC);
+  SERIAL_USED.print(" val ");
+  SERIAL_USED.println(Value);
+
+    if(Number == 0)
+  { // oscillator selection
+    int Multiplier = 1+Value;
+    for(int idx = 0; idx<NumOscillators; ++idx)
+    {
+      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, 9);
+    }
+    SERIAL_USED.print("Selected frequency multiplier A ");
+    SERIAL_USED.println(Multiplier);
+  }
+  else if(Number == 1)
+  { // oscillator selection
+    int Multiplier = 1+Value;
+    for(int idx = 0; idx<NumOscillators; ++idx)
+    {
+      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, 9);
+    }
+    SERIAL_USED.print("Selected frequency multiplier B ");
+    SERIAL_USED.println(Multiplier);
+  }
+  else if(Number == 2)
+  { // oscillator selection
+    int Multiplier = 1+Value;
+    for(int idx = 0; idx<NumOscillators; ++idx)
+    {
+      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, 9);
+    }
+    SERIAL_USED.print("Selected frequency multiplier C ");
+    SERIAL_USED.println(Multiplier);
+  }
+ }
 
 void LogControlChange(byte Channel, byte Number, byte Value)
 {
@@ -282,6 +327,10 @@ void setup()
     g_ActivationCounter[idx] = -1;
   }
 
+  analogReadResolution(10);
+  g_ControlChange.SetChangeCallback(OnPotControlChange);
+  g_ControlChange.SetChangeThreshold(4);
+
   mcp48_begin();
   mcp48_setOutput(0);
   delay(100);
@@ -312,6 +361,21 @@ void setup()
 void loop() 
 {
   // put your main code here, to run repeatedly:
-    usbMIDI.read();
+  //for(int Repeat = 0; Repeat<100; ++Repeat)
+  {
+  //  usbMIDI.read();
+  }
+  
+    for(int idx = 0; idx<NumPots; ++idx)
+    {
+      if(idx!=6)
+      {
+      int Value = analogRead(AnalogInPin+idx);
+      g_ControlChange.SetValue(idx, Value);
+      }
+      delay(1);
+      usbMIDI.read();
+
+    }
 }
 
