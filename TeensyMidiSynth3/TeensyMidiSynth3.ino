@@ -18,6 +18,7 @@ const int MinFrequencyHz = 25;
 isl::CKarplusStrong<int, IntScale, SamplingFrequency/MinFrequencyHz, NumOscillators> g_Oscillator;
 int g_Damp;
 int g_Excite;
+int g_AttackMilliSeconds;
 int g_NoteOnCounter;
 const int DelayCapacity = SamplingFrequency/10;
 isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayLeft;
@@ -28,8 +29,6 @@ int g_ValRight;
 
 void WriteDac()
 {
-  //int Val = CalcDacValue();
-  //mcp48_setOutput(CalcDacValue());
   CalcDacValue();
   mcp48_setOutput(0, GAIN_1, 1, g_ValLeft);
   mcp48_setOutput(1, GAIN_1, 1, g_ValRight);  
@@ -62,18 +61,6 @@ void CalcDacValue()
 
   ClampAndScale(g_ValLeft);
   ClampAndScale(g_ValRight);
-//  Val = 2048 + 7*Val/16;
-//
-//  if(Val<0)
-//  {
-//    Val = 0;
-//  }
-//  else if(4095<Val)
-//  {
-//    Val = 4095;
-//  }
- 
-  //return {ValLeft, ValRight};
 }
 
 void SpeedTest()
@@ -119,7 +106,7 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
   ++g_NoteOnCounter;
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(Note);
   //int Excitation = Velocity<<5; // 27 to 2^12
-  g_Oscillator.Excite(g_Excite, FreqMilliHz, g_Damp);
+  g_Oscillator.Excite(g_Excite, FreqMilliHz, g_Damp, g_AttackMilliSeconds);
 }
 
 void LogNoteOn(byte Channel, byte Note, byte Velocity)
@@ -163,6 +150,12 @@ void OnControlChange(byte Channel, byte Number, byte Value)
     g_Excite = Value<<5;//2^7 to 2^12
     SERIAL_USED.print("Selected Excite ");
     SERIAL_USED.println(g_Excite);
+  }
+  else if(Number == 19)
+  { // attack 
+    g_AttackMilliSeconds = Value<<3;//2^7 to 2^10 (1024)
+    SERIAL_USED.print("Selected Attack ");
+    SERIAL_USED.println(g_AttackMilliSeconds);
   }
   else if(Number == 21)
   {
@@ -243,6 +236,7 @@ void setup()
   g_NoteOnCounter = 0;
   g_Damp = 3072;//0.75*4096
   g_Excite = 2048;//0.5*4096
+  g_AttackMilliSeconds = 0;
   g_Oscillator.SetSamplingFrequency(SamplingFrequency);
   
   g_FeedbackDelayLeft.SetDelay(SamplingFrequency*11/1000);

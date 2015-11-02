@@ -74,4 +74,72 @@ private:
   T   m_ReleaseSlope;
 };
 
+/*
+ * attack-only envelope.
+ * when maximum is reached, holds indefinitely until next note on is triggered
+ */
+template<class T, int Scale>
+class CAEnvelope
+{
+public:
+
+  CAEnvelope()
+   : m_Value(MaxValue)
+   , m_AttackSlope(MaxValue)
+  {}
+
+  void SetSlope( T Slope)
+  {
+      if(0<Slope && Slope<MaxValue)
+      {
+          m_AttackSlope = Slope;
+      }
+  }
+
+  T CalcSlopeUpscaled(uint64_t SamplingFrequency, T AttackMilliSeconds)
+  {
+      uint64_t Mult = MaxValue;
+      uint64_t Slope = 0<AttackMilliSeconds ? 1000 * Mult / (SamplingFrequency * AttackMilliSeconds) : MaxValue;
+      return Slope;
+  }
+
+  void SetAttack(uint64_t SamplingFrequency, T AttackMilliSeconds)
+  {
+      m_AttackSlope = CalcSlopeUpscaled(SamplingFrequency, AttackMilliSeconds);
+  }
+
+  void NoteOn()
+  {
+    m_Value = 0;
+  }
+
+  void NoteOff()
+  {
+    //ignored
+  }
+
+  T operator()(T In)
+  {
+    T Amplification = m_Value;
+    if(m_Value<MaxValue-m_AttackSlope)
+    {
+        m_Value += m_AttackSlope;
+    }
+    else
+    {
+        m_Value = MaxValue;
+    }
+
+    return ((Amplification>>Rescale)*In)>>Scale;
+  }
+
+private:
+  static const int MaxNumBits = sizeof(T)*8-2;//in case of signed
+  static const int Rescale = MaxNumBits - Scale;
+  static const int MaxValue = 1<<MaxNumBits;
+
+  T   m_Value;
+  T   m_AttackSlope;
+};
+
 }

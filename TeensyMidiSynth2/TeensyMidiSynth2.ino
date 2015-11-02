@@ -22,7 +22,7 @@ int g_MidiNote[NumOscillators];
 int g_ActivationCounter[NumOscillators];
 int g_NoteOnCounter;
 
-const int NumPots = 8;
+const int NumPots = 3;
 const int AnalogInPin = A0;
 CControlChange<NumPots, int> g_ControlChange;
 

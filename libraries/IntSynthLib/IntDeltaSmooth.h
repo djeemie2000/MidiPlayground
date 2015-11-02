@@ -3,7 +3,7 @@
 namespace isl
 {
 
-template<class T>
+template<class T, T Delta = 1>
 class CDeltaSmooth
 {
 public:
@@ -18,7 +18,16 @@ public:
 
     T operator()(T In)
     {
-        m_Value += m_Value<In ? 1 : -1;
+        if(m_Value<In)
+        {
+            m_Value += Delta;
+        }
+        else if(In<m_Value)
+        {
+            m_Value -= Delta;
+        }
+        // else m_Value == In
+
         return m_Value;
     }
 
