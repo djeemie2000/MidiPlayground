@@ -9,11 +9,11 @@
 #define SERIAL_USED Serial1
 
 //Note: reducing the sampling frequency to save RAM is certainly an option!
-const int SamplingFrequency = 20000;
-const int IntScale = 12;
+const int SamplingFrequency = 30000;
+const int IntScale = 16;
 
 const int NumOscillators = 8;
-const int MinFrequencyHz = 25;
+const int MinFrequencyHz = 35;
 
 isl::CKarplusStrong<int, IntScale, SamplingFrequency/MinFrequencyHz, NumOscillators> g_Oscillator;
 int g_Damp;
@@ -56,8 +56,8 @@ void CalcDacValue()
 
   int Val = g_Oscillator(); 
 
-  g_ValLeft = g_FeedbackDelayLeft(Val);
-  g_ValRight = g_FeedbackDelayRight(Val);
+  g_ValLeft = g_FeedbackDelayLeft(Val)>>4;
+  g_ValRight = g_FeedbackDelayRight(Val)>>4;
 
   ClampAndScale(g_ValLeft);
   ClampAndScale(g_ValRight);
@@ -153,7 +153,7 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   }
   else if(Number == 19)
   { // attack 
-    g_AttackMilliSeconds = Value<<3;//2^7 to 2^10 (1024)
+    g_AttackMilliSeconds = 1+Value<<3;//2^7 to 2^10 (1024)
     SERIAL_USED.print("Selected Attack ");
     SERIAL_USED.println(g_AttackMilliSeconds);
   }
