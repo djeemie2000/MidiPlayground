@@ -22,9 +22,26 @@ int g_MidiNote[NumOscillators];
 int g_ActivationCounter[NumOscillators];
 int g_NoteOnCounter;
 
-const int NumPots = 3;
 const int AnalogInPin = A0;
+const int PotScale = 9;
+const int NumPots = 3;
 CControlChange<NumPots, int> g_ControlChange;
+
+const int FrequencyMultiplierScale = 10;
+const int PotOffset = (1<<(PotScale-1));
+
+struct SParameter
+{
+  int s_Coarse;
+  int s_Fine;
+
+  SParameter() : s_Coarse(0), s_Fine(0){}
+  int Value() const { return s_Coarse+s_Fine; }
+};
+
+SParameter g_FrequencyMultiplierA;
+SParameter g_FrequencyMultiplierB;
+SParameter g_FrequencyMultiplierC;
 
 void WriteDac()
 {
@@ -196,31 +213,37 @@ void OnControlChange(byte Channel, byte Number, byte Value)
     SERIAL_USED.println(SelectedOperator);
   }
   else if(Number == 21)
-  { // oscillator selection
-    int Multiplier = 1+Value;
+  { // 
+    g_FrequencyMultiplierA.s_Coarse = (1+Value)<<4;// scale 7 to 11
+    
+    int Multiplier = g_FrequencyMultiplierA.Value();// 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, 7);
+      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, FrequencyMultiplierScale);
     }
     SERIAL_USED.print("Selected frequency multiplier A ");
     SERIAL_USED.println(Multiplier);
   }
   else if(Number == 22)
-  { // oscillator selection
-    int Multiplier = 1+Value;
+  { // 
+    g_FrequencyMultiplierB.s_Coarse = (1+Value)<<4;// scale 7 to 11
+
+    int Multiplier = g_FrequencyMultiplierB.Value();// 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, 7);
+      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, FrequencyMultiplierScale);
     }
     SERIAL_USED.print("Selected frequency multiplier B ");
     SERIAL_USED.println(Multiplier);
   }
   else if(Number == 23)
-  { // oscillator selection
-    int Multiplier = 1+Value;
+  { // 
+    g_FrequencyMultiplierC.s_Coarse = (1+Value)<<4;// scale 7 to 11
+
+    int Multiplier = g_FrequencyMultiplierC.Value();// 1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, 7);
+      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, FrequencyMultiplierScale);
     }
     SERIAL_USED.print("Selected frequency multiplier C ");
     SERIAL_USED.println(Multiplier);
@@ -234,32 +257,38 @@ void OnPotControlChange(int Number, int Value)
   SERIAL_USED.print(" val ");
   SERIAL_USED.println(Value);
 
-    if(Number == 0)
+  if(Number == 0)
   { // oscillator selection
-    int Multiplier = 1+Value;
+    g_FrequencyMultiplierA.s_Fine = Value - PotOffset;// [0,1024[ to [-512, 512[
+
+    int Multiplier = g_FrequencyMultiplierA.Value(); //1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierA(Multiplier, FrequencyMultiplierScale);
     }
     SERIAL_USED.print("Selected frequency multiplier A ");
     SERIAL_USED.println(Multiplier);
   }
   else if(Number == 1)
   { // oscillator selection
-    int Multiplier = 1+Value;
+    g_FrequencyMultiplierB.s_Fine = Value - PotOffset;// [0,1024[ to [-512, 512[
+    
+    int Multiplier = g_FrequencyMultiplierB.Value(); //1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierB(Multiplier, FrequencyMultiplierScale);//PotScale-1);
     }
     SERIAL_USED.print("Selected frequency multiplier B ");
     SERIAL_USED.println(Multiplier);
   }
   else if(Number == 2)
   { // oscillator selection
-    int Multiplier = 1+Value;
+    g_FrequencyMultiplierC.s_Fine = Value - PotOffset;// [0,1024[ to [-512, 512[
+
+    int Multiplier = g_FrequencyMultiplierC.Value(); //1+Value;
     for(int idx = 0; idx<NumOscillators; ++idx)
     {
-      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, 9);
+      g_Oscillator[idx].SetFrequencyMultiplierC(Multiplier, FrequencyMultiplierScale);//PotScale-1);
     }
     SERIAL_USED.print("Selected frequency multiplier C ");
     SERIAL_USED.println(Multiplier);
@@ -313,7 +342,7 @@ void setup()
   for(int idx = 0; idx<NumOscillators; ++idx)
   {
     g_Oscillator[idx].SetSamplingFrequency(SamplingFrequency);
-    g_Oscillator[idx].SetFrequency(220 * 1000);
+    g_Oscillator[idx].SetFrequency(110 * 1000);
     
     g_Oscillator[idx].SelectOperatorA(0);
     g_Oscillator[idx].SelectOperatorB(0);
@@ -327,7 +356,14 @@ void setup()
     g_ActivationCounter[idx] = -1;
   }
 
-  analogReadResolution(10);
+  g_FrequencyMultiplierA.s_Coarse = 1<<FrequencyMultiplierScale;
+  g_FrequencyMultiplierA.s_Fine = 0;
+  g_FrequencyMultiplierB.s_Coarse = 1<<FrequencyMultiplierScale;
+  g_FrequencyMultiplierB.s_Fine = 0;
+  g_FrequencyMultiplierC.s_Coarse = 1<<FrequencyMultiplierScale;
+  g_FrequencyMultiplierC.s_Fine = 0;
+
+  analogReadResolution(PotScale);
   g_ControlChange.SetChangeCallback(OnPotControlChange);
   g_ControlChange.SetChangeThreshold(1);
 
