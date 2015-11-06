@@ -8,6 +8,9 @@
 
 #define SERIAL_USED Serial1
 
+const int LedPin = 3;
+int g_LedCounter;
+
 //Note: reducing the sampling frequency to save RAM is certainly an option!
 const int SamplingFrequency = 30000;
 const int IntScale = 16;
@@ -119,6 +122,8 @@ void OnNoteOn(byte Channel, byte Note, byte Velocity)
   int FreqMilliHz = GetMidiNoteFrequencyMilliHz(Note);
   //int Excitation = Velocity<<5; // 27 to 2^12
   g_Oscillator.Excite(g_Excite, FreqMilliHz, g_Damp, g_AttackMilliSeconds);
+
+  g_LedCounter = 100;
 }
 
 void LogNoteOn(byte Channel, byte Note, byte Velocity)
@@ -255,6 +260,10 @@ void setup()
   SERIAL_USED.begin(115200);
   delay(1000);
 
+  pinMode(LedPin, OUTPUT);
+  g_LedCounter = 0;
+  digitalWrite(LedPin, HIGH);
+
   SERIAL_USED.println("Teensy Midi Synth 2...");
 
   g_NoteOnCounter = 0;
@@ -305,6 +314,11 @@ void setup()
 void loop() 
 {
   // put your main code here, to run repeatedly:
-    usbMIDI.read();
+  usbMIDI.read();
+
+  --g_LedCounter;
+  digitalWrite(LedPin, 0<g_LedCounter ? HIGH : LOW);
+    
+  delay(1);
 }
 
