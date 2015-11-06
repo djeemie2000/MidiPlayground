@@ -68,6 +68,36 @@ void TestDacOutSpeed()
 }
 
 
+
+void TestFloatVsIntSpeed()
+{
+  {
+    Serial.println("Speed test float calc ");
+    float Dummy = 0.0f;
+    unsigned long Before = millis();
+    for (int Repeat = 0; Repeat < 10*SamplingFrequency; ++Repeat)
+    {
+      Dummy = Dummy*Dummy + 15.0f*Dummy + Dummy + 3.0f;
+    }
+    unsigned long After = millis();
+    Serial.println(Dummy);
+    LogSpeedTest(10*SamplingFrequency, Before, After);
+  }
+
+  {
+      Serial.println("Speed test int calc ");
+      int IntDummy = 0.0f;
+      unsigned long Before = millis();
+      for (int Repeat = 0; Repeat < 10*SamplingFrequency; ++Repeat)
+      {
+        IntDummy = IntDummy*IntDummy + 15*IntDummy + IntDummy + 3;
+      }
+      unsigned long After = millis();
+      Serial.println(IntDummy);
+      LogSpeedTest(10*SamplingFrequency, Before, After);
+  }
+}
+
 void setup() 
 {
   // put your setup code here, to run once:
@@ -86,6 +116,9 @@ void setup()
   delay(1000);
 
   TestDacOutSpeed();
+  delay(1000);
+
+  TestFloatVsIntSpeed();
   delay(1000);
   
   Serial.println("Starting...");
