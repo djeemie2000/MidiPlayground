@@ -11,6 +11,7 @@
 //Note: reducing the sampling frequency to save RAM is certainly an option!
 const int SamplingFrequency = 30000;
 const int IntScale = 16;
+const int DacScale = 12;
 
 const int NumOscillators = 8;
 const int MinFrequencyHz = 35;
@@ -20,9 +21,11 @@ int g_Damp;
 int g_Excite;
 int g_AttackMilliSeconds;
 int g_NoteOnCounter;
-const int DelayCapacity = SamplingFrequency/10;
-isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayLeft;
-isl::CFeedbackDelay<int, DelayCapacity> g_FeedbackDelayRight;
+
+const int NumCombFilters = 2;
+const int DelayCapacity = SamplingFrequency/40;// min freq is 50 Hz
+isl::CFeedbackDelay<int, DelayCapacity> g_CombFilterLeft[NumCombFilters];
+isl::CFeedbackDelay<int, DelayCapacity> g_CombFilterRight[NumCombFilters];
 
 int g_ValLeft;
 int g_ValRight;
@@ -56,9 +59,18 @@ void CalcDacValue()
 
   int Val = g_Oscillator(); 
 
-  g_ValLeft = g_FeedbackDelayLeft(Val)>>4;
-  g_ValRight = g_FeedbackDelayRight(Val)>>4;
+  g_ValLeft = 0;
+  g_ValRight = 0;
 
+  for(int idx = 0; idx<NumCombFilters; ++idx)
+  {
+    g_ValLeft += g_CombFilterLeft[idx](Val);
+    g_ValRight += g_CombFilterRight[idx](Val);
+  }
+
+  g_ValLeft = (g_ValLeft>>(IntScale-DacScale))/(1+NumCombFilters);
+  g_ValRight = (g_ValRight>>(IntScale-DacScale))/(1+NumCombFilters);
+  
   ClampAndScale(g_ValLeft);
   ClampAndScale(g_ValRight);
 }
@@ -159,29 +171,41 @@ void OnControlChange(byte Channel, byte Number, byte Value)
   }
   else if(Number == 21)
   {
-    g_FeedbackDelayLeft.SetWetDry(Value, 7);
-    g_FeedbackDelayRight.SetWetDry(Value, 7);
+    for(int idx = 0; idx<NumCombFilters; ++idx)
+    {
+      g_CombFilterLeft[idx].SetWetDry(Value, 7);
+      g_CombFilterRight[idx].SetWetDry(Value, 7);
+    }
     SERIAL_USED.print("Selected Wet/Dry Left/Right ");
     SERIAL_USED.println(Value);    
   }  
   else if(Number == 22)
   {
     int Delay = Value*DelayCapacity>>7;
-    g_FeedbackDelayLeft.SetDelay(Delay);
+    for(int idx = 0; idx<NumCombFilters; ++idx)
+    {
+      g_CombFilterLeft[idx].SetDelay(Delay*(1+idx));//(11+idx)/11);//TODO
+    }
     SERIAL_USED.print("Selected Delay Left ");
     SERIAL_USED.println(Delay);
   }
   else if(Number == 23)
   {
     int Delay = Value*DelayCapacity>>7;
-    g_FeedbackDelayRight.SetDelay(Delay);
+    for(int idx = 0; idx<NumCombFilters; ++idx)
+    {
+      g_CombFilterRight[idx].SetDelay(Delay*(1+idx));//(11+idx)/11);//TODO
+    }
     SERIAL_USED.print("Selected Delay Right ");
     SERIAL_USED.println(Delay);    
   }
   else if(Number == 24)
   {
-    g_FeedbackDelayLeft.SetFeedback(Value, 7);
-    g_FeedbackDelayRight.SetFeedback(Value, 7);
+    for(int idx = 0; idx<NumCombFilters; ++idx)
+    {
+      g_CombFilterLeft[idx].SetFeedback(Value, 7);
+      g_CombFilterRight[idx].SetFeedback(Value, 7);
+    }
     SERIAL_USED.print("Selected Feedback Left/Right ");
     SERIAL_USED.println(Value);    
   }  
@@ -238,13 +262,16 @@ void setup()
   g_Excite = 2048;//0.5*4096
   g_AttackMilliSeconds = 0;
   g_Oscillator.SetSamplingFrequency(SamplingFrequency);
-  
-  g_FeedbackDelayLeft.SetDelay(SamplingFrequency*11/1000);
-  g_FeedbackDelayRight.SetDelay(SamplingFrequency*13/1000);
-  g_FeedbackDelayLeft.SetFeedback(125, 7);
-  g_FeedbackDelayRight.SetFeedback(125, 7);
-  g_FeedbackDelayLeft.SetWetDry(64, 7);
-  g_FeedbackDelayRight.SetWetDry(64, 7);
+
+  for(int idx = 0; idx<NumCombFilters; ++idx)
+  {
+    g_CombFilterLeft[idx].SetDelay(SamplingFrequency*11/1000);
+    g_CombFilterRight[idx].SetDelay(SamplingFrequency*13/1000);
+    g_CombFilterLeft[idx].SetFeedback(125, 7);
+    g_CombFilterRight[idx].SetFeedback(125, 7);
+    g_CombFilterLeft[idx].SetWetDry(64, 7);
+    g_CombFilterRight[idx].SetWetDry(64, 7);
+  }
   
   
   mcp48_begin();
