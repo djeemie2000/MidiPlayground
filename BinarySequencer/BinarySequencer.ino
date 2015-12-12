@@ -16,9 +16,13 @@ int IrqPin = 8;  // Digital 2
 CCapacitiveTouchPad TouchPad;
 boolean touchStates[12]; //to keep track of the previous touch states
 
-isl::CBinaryPattern<uint8_t> g_Pattern;
-CStepper<int> g_Stepper;
+static const int NumPatterns = 2;
+
+isl::CBinaryPattern<uint8_t> g_Pattern[NumPatterns];
+CStepper<int> g_Stepper[NumPatterns];
 CStepper<int> g_HiResStepper;
+
+int g_EditPattern;
 
 
 void OnTick()
@@ -26,9 +30,13 @@ void OnTick()
   g_HiResStepper.Advance();
   if(0==g_HiResStepper.GetStep())
   {
-    g_Stepper.Advance();
+    for(int idx = 0; idx<NumPatterns; ++idx)
+    {
+      g_Stepper[idx].Advance();
+    }
   }
 }
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -54,9 +62,12 @@ void setup()
     g_LedControl.clearDisplay(idx);
   }
 
-  g_Pattern.Reset(0x88);
-  g_Stepper.SetNumSteps(8);
-
+  g_EditPattern = 0;
+  for(int idx = 0; idx<NumPatterns; ++idx)
+  {
+    g_Pattern[idx].Reset(0x11);
+    g_Stepper[idx].SetNumSteps(8);
+  }
   g_HiResStepper.SetNumSteps(250);
 
   unsigned long TimerPeriodMicroSeconds = 1000;// 2*120 bpm
@@ -66,22 +77,22 @@ void setup()
   TouchPad.Begin(IrqPin);
 }
 
-void ShowPattern()
+void ShowPattern(int Idx)
 {
-    uint8_t Pattern = g_Pattern.Get();
+    uint8_t Pattern = g_Pattern[Idx].Get();
     const int LedMatrixId = 0;
-    const int Column = 0;
+    const int Column = Idx*2;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 }
 
-void ShowStep()
+void ShowStep(int Idx)
 {
-    int Step = g_Stepper.GetStep();
-    int Bit = g_Pattern.GetBit(Step);
+    int Step = g_Stepper[Idx].GetStep();
+    int Bit = g_Pattern[Idx].GetBit(Step);
     uint8_t Pattern = Bit << Step;
   
     const int LedMatrixId = 0;
-    const int Column = 1;
+    const int Column = 1 + Idx*2;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
   
 }
@@ -91,27 +102,27 @@ void OnTouch(int Pad)
   // Handle touch
   if(Pad==0)
   {
-    g_Pattern.Next();
+    g_Pattern[g_EditPattern].Next();
   }
   else if(Pad==4)
   {
-    g_Pattern.Prev();
+    g_Pattern[g_EditPattern].Prev();
   }
   else if(Pad==1)
   {
-    g_Pattern.Invert();
+    g_Pattern[g_EditPattern].Invert();
   }
   else if(Pad==5)
   {
-    g_Pattern.Mirror();
+    g_Pattern[g_EditPattern].Mirror();
   }
   else if(Pad==2)
   {
-    g_Pattern.RotateNext();
+    g_Pattern[g_EditPattern].RotateNext();
   }
   else if(Pad==6)
   {
-    g_Pattern.RotatePrev();
+    g_Pattern[g_EditPattern].RotatePrev();
   }
   else if(Pad==3)
   {
@@ -119,26 +130,31 @@ void OnTouch(int Pad)
   }
   else if(Pad==7)
   {
-    // default
-    //g_Pattern.Reset(0x88);//default
-
     // clear
-    g_Pattern.Reset(0x00);
+    g_Pattern[g_EditPattern].Reset(0x00);
+  }
+  else if(Pad==8)
+  {
+    g_EditPattern = 0;
+  }
+  else if(Pad==9)
+  {
+    g_EditPattern = 1;
   }
   else if(Pad==10)
   {
-    int NumSteps = g_Stepper.GetNumSteps()+1;
+    int NumSteps = g_Stepper[g_EditPattern].GetNumSteps()+1;
     if(NumSteps<=8)
     {
-      g_Stepper.SetNumSteps(NumSteps);
+      g_Stepper[g_EditPattern].SetNumSteps(NumSteps);
     }
   }
   else if(Pad==11)
   {
-    int NumSteps = g_Stepper.GetNumSteps()-1;
+    int NumSteps = g_Stepper[g_EditPattern].GetNumSteps()-1;
     if(1<=NumSteps)
     {
-      g_Stepper.SetNumSteps(NumSteps);
+      g_Stepper[g_EditPattern].SetNumSteps(NumSteps);
     }
   }
 
@@ -164,8 +180,11 @@ void loop()
     }
     
     // 
-    ShowPattern();
-    ShowStep();
-
+    for(int idx = 0; idx<NumPatterns; ++idx)
+    {
+      ShowPattern(idx);
+      ShowStep(idx);
+    }
+    
     //delay(10);//avoid touchpad from being too responsive?
 }
