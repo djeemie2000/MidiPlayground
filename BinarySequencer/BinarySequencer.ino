@@ -128,6 +128,11 @@ void ShowGates()
       // XOR is 1
       Pattern |= 2<<(NumPatterns+2);      
     }
+    if(0==GateOnCount)
+    {
+      // NONE
+      Pattern |= 2<<(NumPatterns+3);            
+    }
 
     // pulse on during first half of step
     bool PulseOn = g_HiResStepper.GetStep()<g_HiResStepper.GetNumSteps()/2;
