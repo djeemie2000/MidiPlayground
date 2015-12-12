@@ -128,10 +128,15 @@ void ShowGates()
       // XOR is 1
       Pattern |= 2<<(NumPatterns+2);      
     }
+
+    // pulse on during first half of step
+    bool PulseOn = g_HiResStepper.GetStep()<g_HiResStepper.GetNumSteps()/2;
     
     const int LedMatrixId = 0;
     const int Column = 6;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
+
+    g_LedControl.setColumn(LedMatrixId, Column+1, PulseOn ? Pattern : 0x00);  
 } 
 
 void OnTouch(int Pad)
