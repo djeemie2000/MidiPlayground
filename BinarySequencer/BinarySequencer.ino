@@ -88,7 +88,7 @@ void ShowPattern(int Idx)
 {
     uint8_t Pattern = g_Pattern[Idx].Get();
     const int LedMatrixId = 0;
-    const int Column = Idx*2;
+    const int Column = Idx*3;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 }
 
@@ -99,7 +99,7 @@ void ShowStep(int Idx)
     uint8_t Pattern = Bit << Step;
   
     const int LedMatrixId = 0;
-    const int Column = 1 + Idx*2;
+    const int Column = 1 + Idx*3;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 }
 
@@ -139,7 +139,6 @@ void ShowGates()
     
     const int LedMatrixId = 0;
     const int Column = 6;
-    g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 
     g_LedControl.setColumn(LedMatrixId, Column+1, PulseOn ? Pattern : 0x00);  
 } 
