@@ -16,24 +16,30 @@ int IrqPin = 8;  // Digital 2
 CCapacitiveTouchPad TouchPad;
 boolean touchStates[12]; //to keep track of the previous touch states
 
-static const int NumPatterns = 2;
-
-isl::CBinaryPattern<uint8_t> g_Pattern[NumPatterns];
-CStepper<int> g_Stepper[NumPatterns];
 CStepper<int> g_HiResStepper;
 
+static const int NumPatterns = 2;
+isl::CBinaryPattern<uint8_t> g_Pattern[NumPatterns];
+CStepper<int> g_Stepper[NumPatterns];
 int g_EditPattern;
 
+int g_Gate[NumPatterns];
 
 void OnTick()
 {
   g_HiResStepper.Advance();
   if(0==g_HiResStepper.GetStep())
   {
+    // advance steps
+    int NumGatesOn = 0;
     for(int idx = 0; idx<NumPatterns; ++idx)
     {
       g_Stepper[idx].Advance();
+
+      g_Gate[idx] = g_Pattern[idx].GetBit(g_Stepper[idx].GetStep()) ? 1 : 0;
+      NumGatesOn += g_Gate[idx];
     }
+    // update logical combination gates 
   }
 }
 
@@ -67,6 +73,7 @@ void setup()
   {
     g_Pattern[idx].Reset(0x11);
     g_Stepper[idx].SetNumSteps(8);
+    g_Gate[idx] = 0;
   }
   g_HiResStepper.SetNumSteps(250);
 
@@ -94,8 +101,38 @@ void ShowStep(int Idx)
     const int LedMatrixId = 0;
     const int Column = 1 + Idx*2;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
-  
 }
+
+void ShowGates()
+{
+    int GateOnCount = 0;
+    uint8_t Pattern = 0x00;
+    for(int idx = 0; idx<NumPatterns; ++idx)
+    {
+      Pattern |= g_Gate[idx]<<idx;
+      GateOnCount += g_Gate[idx];
+    }
+    // AND gate
+    if(GateOnCount == NumPatterns)
+    {
+      // AND is 1
+      Pattern |= 2<<NumPatterns;
+    }
+    if(0<GateOnCount)
+    {
+      // OR is 1
+      Pattern |= 2<<(NumPatterns+1);
+    }
+    if(0<GateOnCount && GateOnCount<NumPatterns)
+    {
+      // XOR is 1
+      Pattern |= 2<<(NumPatterns+2);      
+    }
+    
+    const int LedMatrixId = 0;
+    const int Column = 6;
+    g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
+} 
 
 void OnTouch(int Pad)
 {
@@ -158,8 +195,8 @@ void OnTouch(int Pad)
     }
   }
 
-  Serial.print("OnTouch ");
-  Serial.println(Pad);
+  //Serial.print("OnTouch ");
+  //Serial.println(Pad);
 }
 
 void loop()
@@ -185,6 +222,7 @@ void loop()
       ShowPattern(idx);
       ShowStep(idx);
     }
+    ShowGates();
     
     //delay(10);//avoid touchpad from being too responsive?
 }
