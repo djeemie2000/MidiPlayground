@@ -6,7 +6,7 @@
 #include "TimerOne.h"
 
 
-const int NumLedMatrices = 1;
+const int NumLedMatrices = 2;
 const int DataPin = 12;
 const int ClockPin = 11;
 const int LoadPin = 10;
@@ -24,6 +24,7 @@ CStepper<int> g_Stepper[NumPatterns];
 int g_EditPattern;
 
 int g_Gate[NumPatterns];
+uint8_t g_GateHistory[NumPatterns];
 
 void OnTick()
 {
@@ -31,13 +32,12 @@ void OnTick()
   if(0==g_HiResStepper.GetStep())
   {
     // advance steps
-    int NumGatesOn = 0;
     for(int idx = 0; idx<NumPatterns; ++idx)
     {
       g_Stepper[idx].Advance();
 
       g_Gate[idx] = g_Pattern[idx].GetBit(g_Stepper[idx].GetStep()) ? 1 : 0;
-      NumGatesOn += g_Gate[idx];
+      g_GateHistory[idx] = g_GateHistory[idx]<<1 | g_Gate[idx];
     }
     // update logical combination gates 
   }
@@ -74,6 +74,7 @@ void setup()
     g_Pattern[idx].Reset(0x11);
     g_Stepper[idx].SetNumSteps(8);
     g_Gate[idx] = 0;
+    g_GateHistory[idx] = 0;
   }
   g_HiResStepper.SetNumSteps(250);
 
@@ -142,6 +143,24 @@ void ShowGates()
 
     g_LedControl.setColumn(LedMatrixId, Column+1, PulseOn ? Pattern : 0x00);  
 } 
+
+void ShowHistory()
+{
+    const int LedMatrixId = 1;
+
+    g_LedControl.setColumn(LedMatrixId, 0, g_GateHistory[0]);
+    g_LedControl.setColumn(LedMatrixId, 1, g_GateHistory[1]);
+
+    uint8_t AndGateHistory = g_GateHistory[0] & g_GateHistory[1];
+    uint8_t OrGateHistory = g_GateHistory[0] | g_GateHistory[1];
+    uint8_t XorGateHistory = g_GateHistory[0] ^ g_GateHistory[1];
+    uint8_t NoneGateHistory = ~OrGateHistory;
+
+    g_LedControl.setColumn(LedMatrixId, 2, AndGateHistory);
+    g_LedControl.setColumn(LedMatrixId, 3, OrGateHistory);
+    g_LedControl.setColumn(LedMatrixId, 4, XorGateHistory);
+    g_LedControl.setColumn(LedMatrixId, 5, NoneGateHistory);
+}
 
 void OnTouch(int Pad)
 {
@@ -231,7 +250,8 @@ void loop()
       ShowPattern(idx);
       ShowStep(idx);
     }
-    ShowGates();
+    //ShowGates();
+    ShowHistory();
     
     //delay(10);//avoid touchpad from being too responsive?
 }
