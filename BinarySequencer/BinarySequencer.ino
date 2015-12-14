@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <Wire.h>
 #include "CapacitiveTouchPad.h"
 #include "LedControlMS.h"
@@ -43,6 +44,26 @@ void OnTick()
   }
 }
 
+void Save()
+{
+  for(int idx = 0; idx<NumPatterns; ++idx)
+  {
+    EEPROM.update(idx*2, g_Pattern[idx].Get());
+    EEPROM.update(idx*2+1, g_Stepper[idx].GetNumSteps());
+  }
+}
+
+void Load()
+{
+  for(int idx = 0; idx<NumPatterns; ++idx)
+  {
+    g_Pattern[idx].Reset(EEPROM.read(idx*2));
+    int NumSteps = min(8, EEPROM.read(idx*2+1));
+    g_Stepper[idx].SetNumSteps(NumSteps);
+  }  
+}
+
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -77,6 +98,8 @@ void setup()
     g_GateHistory[idx] = 0;
   }
   g_HiResStepper.SetNumSteps(250);
+
+  Load();
 
   unsigned long TimerPeriodMicroSeconds = 1000;// 2*120 bpm
   Timer1.initialize(TimerPeriodMicroSeconds);
@@ -233,6 +256,8 @@ void OnTouch(int Pad)
       g_Stepper[g_EditPattern].SetNumSteps(NumSteps);
     }
   }
+
+  Save();
 
   //Serial.print("OnTouch ");
   //Serial.println(Pad);
