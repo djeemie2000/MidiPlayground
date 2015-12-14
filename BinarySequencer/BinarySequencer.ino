@@ -89,7 +89,7 @@ void ShowPattern(int Idx)
 {
     uint8_t Pattern = g_Pattern[Idx].Get();
     const int LedMatrixId = 0;
-    const int Column = Idx*3;
+    const int Column = Idx*4;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 }
 
@@ -100,7 +100,17 @@ void ShowStep(int Idx)
     uint8_t Pattern = Bit << Step;
   
     const int LedMatrixId = 0;
-    const int Column = 1 + Idx*3;
+    const int Column = 1 + Idx*4;
+    g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
+}
+
+void ShowNumSteps(int Idx)
+{
+    int NumSteps = g_Stepper[Idx].GetNumSteps();
+    uint8_t Pattern = 0xFF >> (8-NumSteps);
+  
+    const int LedMatrixId = 0;
+    const int Column = 2 + Idx*4;
     g_LedControl.setColumn(LedMatrixId, Column, Pattern);  
 }
 
@@ -154,12 +164,13 @@ void ShowHistory()
     uint8_t AndGateHistory = g_GateHistory[0] & g_GateHistory[1];
     uint8_t OrGateHistory = g_GateHistory[0] | g_GateHistory[1];
     uint8_t XorGateHistory = g_GateHistory[0] ^ g_GateHistory[1];
-    uint8_t NoneGateHistory = ~OrGateHistory;
+    uint8_t NoneGateHistory = ~OrGateHistory;// none = NOR
+    uint8_t NandGateHistory = ~AndGateHistory;
 
-    g_LedControl.setColumn(LedMatrixId, 2, AndGateHistory);
-    g_LedControl.setColumn(LedMatrixId, 3, OrGateHistory);
+    g_LedControl.setColumn(LedMatrixId, 3, AndGateHistory);
     g_LedControl.setColumn(LedMatrixId, 4, XorGateHistory);
     g_LedControl.setColumn(LedMatrixId, 5, NoneGateHistory);
+    g_LedControl.setColumn(LedMatrixId, 6, NandGateHistory);
 }
 
 void OnTouch(int Pad)
@@ -249,6 +260,7 @@ void loop()
     {
       ShowPattern(idx);
       ShowStep(idx);
+      ShowNumSteps(idx);
     }
     //ShowGates();
     ShowHistory();
