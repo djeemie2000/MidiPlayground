@@ -27,11 +27,18 @@ int g_EditPattern;
 int g_Gate[NumPatterns];
 uint8_t g_GateHistory[NumPatterns];
 
+// gate outputs
+static const int GateOutPin = 2;
+
+// Speed
+static const int HiResPeriod = 250;
+
 void OnTick()
 {
   g_HiResStepper.Advance();
   if(0==g_HiResStepper.GetStep())
   {
+    
     // advance steps
     for(int idx = 0; idx<NumPatterns; ++idx)
     {
@@ -39,8 +46,17 @@ void OnTick()
 
       g_Gate[idx] = g_Pattern[idx].GetBit(g_Stepper[idx].GetStep()) ? 1 : 0;
       g_GateHistory[idx] = g_GateHistory[idx]<<1 | g_Gate[idx];
-    }
-    // update logical combination gates 
+    }  
+    // update (logical combination) gates 
+    digitalWrite(GateOutPin, g_Gate[0]?HIGH:LOW);
+    digitalWrite(GateOutPin+1, g_Gate[1]?HIGH:LOW);
+  
+  }
+  // halfway step => gates off
+  else if(HiResPeriod/2==g_HiResStepper.GetStep())
+  {
+     digitalWrite(GateOutPin, LOW);
+     digitalWrite(GateOutPin+1, LOW);
   }
 }
 
@@ -75,6 +91,10 @@ void setup()
   Serial.begin(115200);
   Serial.println("BinarySequencer...");
 
+  pinMode(GateOutPin, OUTPUT);
+  pinMode(GateOutPin+1, OUTPUT);
+  
+
   for (int idx = 0; idx < NumLedMatrices; ++idx)
   {
     /*
@@ -97,7 +117,7 @@ void setup()
     g_Gate[idx] = 0;
     g_GateHistory[idx] = 0;
   }
-  g_HiResStepper.SetNumSteps(250);
+  g_HiResStepper.SetNumSteps(HiResPeriod);
 
   Load();
 
