@@ -50,13 +50,25 @@ void OnTick()
     // update (logical combination) gates 
     digitalWrite(GateOutPin, g_Gate[0]?HIGH:LOW);
     digitalWrite(GateOutPin+1, g_Gate[1]?HIGH:LOW);
-  
+    
+    int AndGate = (g_Gate[0] && g_Gate[1]) ? HIGH : LOW;
+    int XorGate = (g_Gate[0] || g_Gate[1]) && (g_Gate[0]!=g_Gate[1]) ? HIGH : LOW; 
+    int NoneGate = !g_Gate[0] && !g_Gate[1] ? HIGH : LOW;
+    int NandGate = !(g_Gate[0]&&g_Gate[1]) ? HIGH : LOW;
+    digitalWrite(GateOutPin+2, AndGate);
+    digitalWrite(GateOutPin+3, XorGate);
+    digitalWrite(GateOutPin+4, NoneGate);
+    digitalWrite(GateOutPin+5, NandGate);
   }
   // halfway step => gates off
   else if(HiResPeriod/2==g_HiResStepper.GetStep())
   {
      digitalWrite(GateOutPin, LOW);
      digitalWrite(GateOutPin+1, LOW);
+     digitalWrite(GateOutPin+2, LOW);
+     digitalWrite(GateOutPin+3, LOW);
+     digitalWrite(GateOutPin+4, LOW);
+     digitalWrite(GateOutPin+5, LOW);
   }
 }
 
@@ -93,6 +105,10 @@ void setup()
 
   pinMode(GateOutPin, OUTPUT);
   pinMode(GateOutPin+1, OUTPUT);
+  pinMode(GateOutPin+2, OUTPUT);
+  pinMode(GateOutPin+3, OUTPUT);
+  pinMode(GateOutPin+4, OUTPUT);
+  pinMode(GateOutPin+5, OUTPUT);
   
 
   for (int idx = 0; idx < NumLedMatrices; ++idx)
