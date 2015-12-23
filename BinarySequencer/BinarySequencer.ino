@@ -7,7 +7,7 @@
 #include "TimerOne.h"
 
 
-const int NumLedMatrices = 2;
+const int NumLedMatrices = 1;
 const int DataPin = 12;
 const int ClockPin = 11;
 const int LoadPin = 10;
@@ -25,7 +25,6 @@ CStepper<int> g_Stepper[NumPatterns];
 int g_EditPattern;
 
 int g_Gate[NumPatterns];
-uint8_t g_GateHistory[NumPatterns];
 
 // gate outputs
 static const int GateOutPin = 2;
@@ -45,7 +44,6 @@ void OnTick()
       g_Stepper[idx].Advance();
 
       g_Gate[idx] = g_Pattern[idx].GetBit(g_Stepper[idx].GetStep()) ? 1 : 0;
-      g_GateHistory[idx] = g_GateHistory[idx]<<1 | g_Gate[idx];
     }  
     // update (logical combination) gates 
     digitalWrite(GateOutPin, g_Gate[0]?HIGH:LOW);
@@ -60,7 +58,7 @@ void OnTick()
     digitalWrite(GateOutPin+4, NoneGate);
     digitalWrite(GateOutPin+5, NandGate);
   }
-  // halfway step => gates off
+  // halfway step => all gates off
   else if(HiResPeriod/2==g_HiResStepper.GetStep())
   {
      digitalWrite(GateOutPin, LOW);
@@ -131,7 +129,6 @@ void setup()
     g_Pattern[idx].Reset(0x11);
     g_Stepper[idx].SetNumSteps(8);
     g_Gate[idx] = 0;
-    g_GateHistory[idx] = 0;
   }
   g_HiResStepper.SetNumSteps(HiResPeriod);
 
@@ -212,25 +209,6 @@ void ShowGates()
 
     g_LedControl.setColumn(LedMatrixId, Column+1, PulseOn ? Pattern : 0x00);  
 } 
-
-void ShowHistory()
-{
-    const int LedMatrixId = 1;
-
-    g_LedControl.setColumn(LedMatrixId, 0, g_GateHistory[0]);
-    g_LedControl.setColumn(LedMatrixId, 1, g_GateHistory[1]);
-
-    uint8_t AndGateHistory = g_GateHistory[0] & g_GateHistory[1];
-    uint8_t OrGateHistory = g_GateHistory[0] | g_GateHistory[1];
-    uint8_t XorGateHistory = g_GateHistory[0] ^ g_GateHistory[1];
-    uint8_t NoneGateHistory = ~OrGateHistory;// none = NOR
-    uint8_t NandGateHistory = ~AndGateHistory;
-
-    g_LedControl.setColumn(LedMatrixId, 3, AndGateHistory);
-    g_LedControl.setColumn(LedMatrixId, 4, XorGateHistory);
-    g_LedControl.setColumn(LedMatrixId, 5, NoneGateHistory);
-    g_LedControl.setColumn(LedMatrixId, 6, NandGateHistory);
-}
 
 void OnTouch(int Pad)
 {
@@ -323,8 +301,4 @@ void loop()
       ShowStep(idx);
       ShowNumSteps(idx);
     }
-    //ShowGates();
-    ShowHistory();
-    
-    //delay(10);//avoid touchpad from being too responsive?
 }
