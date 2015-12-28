@@ -1,20 +1,28 @@
+#include <Wire.h>
 #include <SPI.h>
 #include "UnoMcpDac.h"
 #include "IntMultiStageEnvelope2.h"
 #include "TimerOne.h"
-#include <Wire.h>
 #include "CapacitiveTouchPad.h"
+#include "LedControlMS.h"
+
 
 int IrqPin = 8;  // Digital 2
 boolean touchStates[12]; //to keep track of the previous touch states
 CCapacitiveTouchPad g_TouchPad;
 
+const int NumLedMatrices = 1;
+const int DataPin = 7;
+const int ClockPin = 6;
+const int LoadPin = 5;
+LedControl g_LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
+
 
 static const unsigned long SamplingFrequency = 12000;
 
 static const int DacScale = 12;//[0,4096[
-static const int NumStages = 4;
-typedef isl::CMultiStageEnvelope2<long, NumStages, DacScale> EnvelopeType;
+static const int NumEnvelopeStages = 4;
+typedef isl::CMultiStageEnvelope2<long, NumEnvelopeStages, DacScale> EnvelopeType;
 EnvelopeType g_Envelope;
 
 void WriteDac()
@@ -92,6 +100,18 @@ void TestEnvelopeSpeed()
   Serial.println();
 }
 
+void ShowAction(int Stage, bool Gate)
+{
+   EnvelopeType::EAction Action = g_Envelope.GetAction(Stage, Gate);
+
+      const int LedMatrixId = 0;
+      int Row = 7-Stage;
+      int Column = Gate ? 0 : 4;
+      g_LedControl.setLed(LedMatrixId, Row, Column, Action==EnvelopeType::AdvanceAction);
+      g_LedControl.setLed(LedMatrixId, Row, Column+1, Action==EnvelopeType::HoldAction);
+      g_LedControl.setLed(LedMatrixId, Row, Column+2, Action==EnvelopeType::ResetAction);
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -103,12 +123,29 @@ void setup()
   }
   g_TouchPad.Begin(IrqPin);//, 0x60, 0x80);
 
-  for(int Stage = 0; Stage<NumStages; ++Stage)
+  for (int idx = 0; idx < NumLedMatrices; ++idx)
+  {
+    /*
+     The MAX72XX is in power-saving mode on startup,
+     we have to do a wakeup call
+     */
+    g_LedControl.shutdown(idx, false);
+    /* Set the brightness to a low values */
+    g_LedControl.setIntensity(idx, 1);
+    /* and clear the display */
+    delay(1000);
+    g_LedControl.clearDisplay(idx);
+  }
+
+  for(int Stage = 0; Stage<NumEnvelopeStages; ++Stage)
   {
     g_Envelope.SetDuration(Stage, SamplingFrequency/2);
     g_Envelope.SetTarget(Stage, Stage%2 ? 0 : 4095);
     g_Envelope.SetAction(Stage, true, EnvelopeType::AdvanceAction);
     g_Envelope.SetAction(Stage, false, EnvelopeType::HoldAction);
+
+    ShowAction(Stage, true);
+    ShowAction(Stage, false);
   }
 
   mcp48_begin();
@@ -124,6 +161,96 @@ void setup()
   Timer1.attachInterrupt(WriteDac);
 }
 
+void ToggleAction(int Stage, bool Gate)
+{
+   EnvelopeType::EAction OldAction = g_Envelope.GetAction(Stage, Gate);
+   g_Envelope.ToggleAction(Stage, Gate);
+   
+   // set led matrix accordingly
+   ShowAction(Stage, Gate);
+
+   Serial.print("Toggled action ");
+   Serial.print(Stage);
+   Serial.print(" ");
+   Serial.print(Gate?1:0);
+   Serial.print(" from ");   
+   Serial.println(static_cast<int>(OldAction));
+//   Serial.print(" to ");
+//   Serial.println(static_cast<int>(NewAction));
+}
+
+void OnButtonChange(int Button, bool Pressed)//pressed or released
+{
+  if(Pressed)
+  {
+    if(Button==11)
+    {
+      g_Envelope.NoteOn();
+    }
+    else if(Button==0)
+    {
+      //toggle stage 0 gate off action
+      ToggleAction(0, false);
+    }
+    else if(Button==1)
+    {
+      //toggle stage 0 gate off action
+     ToggleAction(0, true);
+    }
+    else if(Button==2)
+    {
+      ToggleAction(1, false);
+    }
+    else if(Button==3)
+    {
+      ToggleAction(1, true);
+    }
+    else if(Button==5)
+    {
+      ToggleAction(2, false);
+    }
+    else if(Button==6)
+    {
+      ToggleAction(2, true);
+    }
+    else if(Button==7)
+    {
+      ToggleAction(3, false);
+    }
+    else if(Button==8)
+    {
+      ToggleAction(3, true);
+    }
+    
+    Serial.print("Pad ");
+    Serial.print(Button);
+    Serial.println(" was just touched");
+  }
+  else
+  {
+    if(Button==11)
+    {
+      g_Envelope.NoteOff();
+    }
+    Serial.print("Pad ");
+    Serial.print(Button);
+    Serial.println(" was just released");
+  }
+}
+
+void ShowPattern()
+{
+    bool Gate = g_Envelope.GetGate();
+    int Stage = g_Envelope.GetStage();
+  
+    uint8_t GateOnPattern = Gate ? (1<<Stage): 0x00;
+    uint8_t GateOffPattern = Gate ? 0x00 : (1<<Stage);
+    
+    const int LedMatrixId = 0;
+    g_LedControl.setColumn(LedMatrixId, 3, GateOnPattern);  
+    g_LedControl.setColumn(LedMatrixId, 7, GateOffPattern);  
+}
+
 void loop()
 {
     g_TouchPad.Read();
@@ -133,33 +260,12 @@ void loop()
       {
         touchStates[Pad] = g_TouchPad.Get(Pad);
 
-        if(touchStates[Pad])
-        {
-          g_Envelope.NoteOn();
-          //Pad was just touched
-          Serial.print("Pad ");
-          Serial.print(Pad);
-          Serial.println(" was just touched");
-        }
-        else
-        {
-          g_Envelope.NoteOff();
-            //Pad was just released
-          Serial.print("Pad ");
-          Serial.print(Pad);
-          Serial.println(" was just released");
-        }
+        OnButtonChange(Pad, touchStates[Pad]);
       }
     }
+
+    ShowPattern();
+    
     delay(1);//???
-//    g_Envelope.NoteOn();
-//    Serial.println("Gate On...");
-//    delay(1600);
-//    
-//    g_Envelope.NoteOff();
-//    Serial.println("Gate Off...");
-//    delay(1600);
-//    
-//    //Serial.println("Running...");
-    }
+ }
 

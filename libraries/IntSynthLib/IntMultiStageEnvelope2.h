@@ -44,6 +44,31 @@ public:
         }
     }
 
+    EAction GetAction(int Stage, bool Gate) const
+    {
+	return Gate ? m_Stages[Stage].s_GateOnAction
+                    : m_Stages[Stage].s_GateOffAction;
+    }
+
+    void ToggleAction(int Stage, bool Gate)
+    {
+	EAction CurrentAction = GetAction(Stage, Gate);
+	EAction NewAction = AdvanceAction;
+	if(CurrentAction == AdvanceAction)
+	{
+	    NewAction = HoldAction;
+	}
+	else if(CurrentAction == HoldAction)
+	{
+	    NewAction = ResetAction;
+	}
+	else if(CurrentAction == ResetAction)
+	{
+	    NewAction = SkipAction;
+	}
+	SetAction(Stage, Gate, NewAction);
+    }
+
     void NoteOn()
     {
         m_Gate = true;
@@ -91,6 +116,11 @@ public:
     {
         return m_Stage;
     }
+
+    bool GetGate() const
+    {
+	return m_Gate;
+    }	
 
     bool GetHold() const
     {
