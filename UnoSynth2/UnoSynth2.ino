@@ -115,8 +115,8 @@ void setup()
   
   Serial.println("Starting...");
   g_Oscillator.SelectOperator(1);
-    const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
-Timer1.initialize(PeriodMicroSeconds);
+  const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
+  Timer1.initialize(PeriodMicroSeconds);
   Timer1.attachInterrupt(WriteDac);
 }
 

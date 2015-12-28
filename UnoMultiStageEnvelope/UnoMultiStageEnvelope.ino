@@ -2,6 +2,12 @@
 #include "UnoMcpDac.h"
 #include "IntMultiStageEnvelope2.h"
 #include "TimerOne.h"
+#include <Wire.h>
+#include "CapacitiveTouchPad.h"
+
+int IrqPin = 8;  // Digital 2
+boolean touchStates[12]; //to keep track of the previous touch states
+CCapacitiveTouchPad g_TouchPad;
 
 
 static const unsigned long SamplingFrequency = 12000;
@@ -91,6 +97,12 @@ void setup()
   Serial.begin(115200);
   Serial.println("UnoMultiStageEnvelope...");
 
+  for(int idx = 0; idx<g_TouchPad.GetNumPads(); ++idx)
+  {
+    touchStates[idx] = false;
+  }
+  g_TouchPad.Begin(IrqPin);//, 0x60, 0x80);
+
   for(int Stage = 0; Stage<NumStages; ++Stage)
   {
     g_Envelope.SetDuration(Stage, SamplingFrequency/2);
@@ -114,21 +126,40 @@ void setup()
 
 void loop()
 {
-    //TestDacSpeed();
-    //TestEnvelopeSpeed();
-    //TestAccuracy();
+    g_TouchPad.Read();
+    for(int Pad = 0; Pad<g_TouchPad.GetNumPads(); ++Pad)
+    {
+      if(touchStates[Pad]!=g_TouchPad.Get(Pad))
+      {
+        touchStates[Pad] = g_TouchPad.Get(Pad);
 
-    g_Envelope.NoteOn();
-    Serial.println("Gate On...");
-    delay(1600);
-    
-    g_Envelope.NoteOff();
-    Serial.println("Gate Off...");
-    delay(1600);
-    
-    //Serial.println("Running...");
-    
-  //TestSaw();
- // TestSquare();
-}
+        if(touchStates[Pad])
+        {
+          g_Envelope.NoteOn();
+          //Pad was just touched
+          Serial.print("Pad ");
+          Serial.print(Pad);
+          Serial.println(" was just touched");
+        }
+        else
+        {
+          g_Envelope.NoteOff();
+            //Pad was just released
+          Serial.print("Pad ");
+          Serial.print(Pad);
+          Serial.println(" was just released");
+        }
+      }
+    }
+    delay(1);//???
+//    g_Envelope.NoteOn();
+//    Serial.println("Gate On...");
+//    delay(1600);
+//    
+//    g_Envelope.NoteOff();
+//    Serial.println("Gate Off...");
+//    delay(1600);
+//    
+//    //Serial.println("Running...");
+    }
 
