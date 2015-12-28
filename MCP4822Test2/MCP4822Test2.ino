@@ -7,7 +7,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("MCP4822 test 2...");
 
-  pinMode(PIN_CS, OUTPUT);//TODO in lib
+  //pinMode(PIN_CS, OUTPUT);//TODO in lib
   mcp48_begin();
 }
 
@@ -42,8 +42,8 @@ void TestSpeed()
   {
     for (unsigned int DacValue = 0; DacValue < 4096; DacValue += 1)
     {
-      //mcp48_setOutput(0, GAIN_1, 1, DacValue);
-      mcp48_setOutput(DacValue);
+      mcp48_setOutput(0, GAIN_1, 1, DacValue);
+      //mcp48_setOutput(DacValue);
     }
   }
 
@@ -105,10 +105,11 @@ void TestSquare()
 
 void loop()
 {
-    //TestAccuracy();
     TestSpeed();
+    TestAccuracy();
+    
   //  delay(500);
-  TestSaw();
-  //TestSquare();
+  //TestSaw();
+ // TestSquare();
 }
 
