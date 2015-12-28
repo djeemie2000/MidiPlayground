@@ -25,6 +25,8 @@ static const int NumEnvelopeStages = 4;
 typedef isl::CMultiStageEnvelope2<long, NumEnvelopeStages, DacScale> EnvelopeType;
 EnvelopeType g_Envelope;
 
+static const int TargetInPin = A0;
+
 void WriteDac()
 {
   unsigned int DacValue = g_Envelope();
@@ -116,6 +118,11 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("UnoMultiStageEnvelope...");
+
+  for(int idx = 0; idx<NumEnvelopeStages; ++idx)
+  {
+    pinMode(TargetInPin+idx, INPUT);
+  }
 
   for(int idx = 0; idx<g_TouchPad.GetNumPads(); ++idx)
   {
@@ -262,6 +269,12 @@ void loop()
 
         OnButtonChange(Pad, touchStates[Pad]);
       }
+    }
+
+    for(int idx = 0; idx<NumEnvelopeStages; ++idx)
+    {
+      int Value = analogRead(TargetInPin+idx); // [0,1024[
+      g_Envelope.SetTarget(idx, Value<<2); // [0, 4096[
     }
 
     ShowPattern();
