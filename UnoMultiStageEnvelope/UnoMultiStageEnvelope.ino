@@ -18,11 +18,11 @@ const int LoadPin = 5;
 LedControl g_LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
 
 
-static const unsigned long SamplingFrequency = 12000;
+static const unsigned long SamplingFrequency = 1<<14;
 
-static const int DacScale = 12;//[0,4096[
+static const int DurationScale = 14;//16;//[0,65353[
 static const int NumEnvelopeStages = 4;
-typedef isl::CMultiStageEnvelope2<long, NumEnvelopeStages, DacScale> EnvelopeType;
+typedef isl::CMultiStageEnvelope2<long, NumEnvelopeStages, DurationScale> EnvelopeType;
 EnvelopeType g_Envelope;
 
 static const int TargetInPin = A0;
@@ -63,7 +63,7 @@ void TestDacSpeed()
   //high-res saw wave
   for (unsigned long Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
   {
-    unsigned int DacValue = Repeat%(1<<DacScale);
+    unsigned int DacValue = Repeat%(1<<12);
     mcp48_setOutput(0, GAIN_1, 1, DacValue);
     //mcp48_setOutput(DacValue);
   }
@@ -93,7 +93,7 @@ void TestEnvelopeSpeed()
   unsigned long After = millis();
   unsigned long Duration = After - Before;
 
-  Serial.print("DAC out x ");
+  Serial.print("envelope calc x ");
   Serial.print(Number);
   Serial.print(" = ");
   Serial.print(Duration);
