@@ -30,7 +30,9 @@ static const int TargetInPin = A0;
 void WriteDac()
 {
   unsigned int DacValue = g_Envelope();
-  mcp48_setOutput(0, GAIN_1, 1, DacValue);
+  mcp48dac::SetOutput(DacValue, mcp48dac::Channel_A, mcp48dac::Gain_x1);
+  unsigned int SteppedValue = g_Envelope.GetStepped();
+  mcp48dac::SetOutput(SteppedValue, mcp48dac::Channel_B, mcp48dac::Gain_x1);
 }
 
 void TestAccuracy()
@@ -38,9 +40,8 @@ void TestAccuracy()
   //high-res saw wave
   for (unsigned int DacValue = 0; DacValue < 4096; DacValue += 32)
   {
-    mcp48_setOutput(0, GAIN_1, 1, DacValue);
-    //mcp48_setOutput(DacValue);
-
+    mcp48dac::SetOutput(DacValue, mcp48dac::Channel_A, mcp48dac::Gain_x1);
+    
     int ValueA = analogRead(A0);
     int ValueB = analogRead(A1);
     Serial.print("DAC out=");
@@ -64,8 +65,7 @@ void TestDacSpeed()
   for (unsigned long Repeat = 0; Repeat < SamplingFrequency; ++Repeat)
   {
     unsigned int DacValue = Repeat%(1<<12);
-    mcp48_setOutput(0, GAIN_1, 1, DacValue);
-    //mcp48_setOutput(DacValue);
+    mcp48dac::SetOutput(DacValue, mcp48dac::Channel_A, mcp48dac::Gain_x1);
   }
 
   unsigned long After = millis();
@@ -155,7 +155,7 @@ void setup()
     ShowAction(Stage, false);
   }
 
-  mcp48_begin();
+  mcp48dac::Begin();
 
   Serial.println("Testing...");
   TestDacSpeed();

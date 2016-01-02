@@ -128,6 +128,11 @@ public:
                       : m_Stages[m_Stage].s_GateOffAction == HoldAction;
     }
 
+    T GetStepped() const
+    {
+	return m_Stages[m_Stage].s_Target;
+    }	
+
 private:
     static const T MaxDuration = 1<<DurationScale;
 
@@ -147,6 +152,8 @@ private:
     void Advance()
     {
         m_Counter += m_Stages[m_Stage].s_CounterIncrease;
+        //++m_Counter;
+        //if(m_Stages[m_Stage].s_Duration<=m_Counter)
         if(MaxDuration<=m_Counter)
         {
             // advance stage
@@ -170,7 +177,7 @@ private:
         m_Counter = 0;
     }
 
-    const int LastStage = NumStages-1;
+    static const int LastStage = NumStages-1;
 
     struct SStage
     {
@@ -181,6 +188,7 @@ private:
 
         SStage()
             : s_Target(0)
+            //, s_Duration(0)
             , s_CounterIncrease(1)
             , s_GateOnAction(AdvanceAction)
             , s_GateOffAction(HoldAction)
