@@ -32,7 +32,9 @@ void WriteDac()
   unsigned int DacValue = g_Envelope();
   mcp48dac::SetOutput(DacValue, mcp48dac::Channel_A, mcp48dac::Gain_x1);
   unsigned int SteppedValue = g_Envelope.GetStepped();
-  mcp48dac::SetOutput(SteppedValue, mcp48dac::Channel_B, mcp48dac::Gain_x1);
+  unsigned int Note = SteppedValue>>7;
+  unsigned int SteppedNoteValue = Note*1000/12;
+  mcp48dac::SetOutput(SteppedNoteValue, mcp48dac::Channel_B, mcp48dac::Gain_x1);
 }
 
 void TestAccuracy()
