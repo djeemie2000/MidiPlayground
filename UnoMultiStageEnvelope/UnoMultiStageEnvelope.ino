@@ -17,7 +17,6 @@ const int ClockPin = 6;
 const int LoadPin = 5;
 LedControl g_LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
 
-
 static const unsigned long SamplingFrequency = 1<<14;
 
 static const int DurationScale = 14;//16;//[0,65353[
@@ -25,12 +24,26 @@ static const int NumEnvelopeStages = 4;
 typedef isl::CMultiStageEnvelope2<long, NumEnvelopeStages, DurationScale> EnvelopeType;
 EnvelopeType g_Envelope;
 
+bool g_GateIn;
+bool g_GateTouchPad;
+static const int GateInPin = 2;
+
 static const int TargetInPin = A0;
 
 void WriteDac()
 {
+  if(g_GateIn || g_GateTouchPad)
+  {
+    g_Envelope.NoteOn();
+  }
+  else
+  {
+    g_Envelope.NoteOff();
+  }
+  
   unsigned int DacValue = g_Envelope();
   mcp48dac::SetOutput(DacValue, mcp48dac::Channel_A, mcp48dac::Gain_x1);
+  
   unsigned int SteppedValue = g_Envelope.GetStepped();
   unsigned int Note = SteppedValue>>7;
   unsigned int SteppedNoteValue = Note*1000/12;
@@ -146,6 +159,10 @@ void setup()
     g_LedControl.clearDisplay(idx);
   }
 
+  g_GateIn = false;
+  g_GateTouchPad = false;
+  pinMode(GateInPin, INPUT);
+
   for(int Stage = 0; Stage<NumEnvelopeStages; ++Stage)
   {
     g_Envelope.SetDuration(Stage, SamplingFrequency/2);
@@ -194,7 +211,7 @@ void OnButtonChange(int Button, bool Pressed)//pressed or released
   {
     if(Button==11)
     {
-      g_Envelope.NoteOn();
+      g_GateTouchPad = true;//g_Envelope.NoteOn();
     }
     else if(Button==0)
     {
@@ -239,7 +256,7 @@ void OnButtonChange(int Button, bool Pressed)//pressed or released
   {
     if(Button==11)
     {
-      g_Envelope.NoteOff();
+      g_GateTouchPad = false;//g_Envelope.NoteOff();
     }
     Serial.print("Pad ");
     Serial.print(Button);
@@ -262,6 +279,8 @@ void ShowPattern()
 
 void loop()
 {
+    g_GateIn = (digitalRead(GateInPin)==HIGH);
+  
     g_TouchPad.Read();
     for(int Pad = 0; Pad<g_TouchPad.GetNumPads(); ++Pad)
     {
