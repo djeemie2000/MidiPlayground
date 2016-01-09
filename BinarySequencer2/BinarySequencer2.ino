@@ -24,7 +24,7 @@ int g_Gate[NumPatterns];
 static const int GateOutPin = A0;
 
 // Speed
-static const int HiResPeriod = 500;
+static const int HiResPeriod = 250;
 
 void Save();//pre declaration
 
@@ -224,46 +224,34 @@ void setup()
 
 void ShowPattern(int Idx)
 {
-  uint8_t Pattern = g_Controller[Idx].s_Pattern.Get();
+  uint8_t Pattern = g_Controller[Idx].s_Pattern.Get();  
   const int LedMatrixId = 0;
   const int Column = Idx * 4;
   g_LedControl.setColumn(LedMatrixId, Column, Pattern);
 }
 
 void ShowStep(int Idx)
-{
+{  
   int Step = g_Controller[Idx].s_Stepper.GetStep();
-  int Bit = g_Controller[Idx].s_Pattern.GetBit(Step);
-  uint8_t Pattern = Bit << Step;
-
+  uint8_t Pattern = 1 << Step;
+  
   const int LedMatrixId = 0;
   const int Column = 1 + Idx * 4;
   g_LedControl.setColumn(LedMatrixId, Column, Pattern);
 }
 
-void ShowNumSteps(int Idx)
-{
-  int NumSteps = g_Controller[Idx].s_Stepper.GetNumSteps();
-  uint8_t Pattern = 0xFF >> (8 - NumSteps);
-
-  const int LedMatrixId = 0;
-  const int Column = 2 + Idx * 4;
-  g_LedControl.setColumn(LedMatrixId, Column, Pattern);
-}
-
 void loop()
 {
-  //read rotary encoders
+  // update user input
   for(int idx = 0; idx<NumPatterns; ++idx)
   {
     g_Controller[idx].Update();
   }
 
-  //
+  // update 
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
     ShowPattern(idx);
     ShowStep(idx);
-    ShowNumSteps(idx);
   }
 }
