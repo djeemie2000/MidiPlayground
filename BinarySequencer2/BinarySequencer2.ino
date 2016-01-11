@@ -8,6 +8,7 @@
 #include "RotaryEncoder.h"
 #include "DigitalIn.h"
 
+
 const int NumLedMatrices = 1;
 const int DataPin = 12;
 const int ClockPin = 11;
@@ -19,6 +20,7 @@ CStepper<int> g_HiResStepper;
 static const int NumPatterns = 2;
 
 int g_Gate[NumPatterns];
+uint8_t g_Outputs;
 
 // gate outputs
 static const int GateOutPin = A0;
@@ -121,6 +123,7 @@ void OnTick()
   g_HiResStepper.Advance();
   if (0 == g_HiResStepper.GetStep())
   {
+    g_Outputs = 0x0000;
 
     // advance steps
     for (int idx = 0; idx < NumPatterns; ++idx)
@@ -130,27 +133,39 @@ void OnTick()
       g_Gate[idx] = g_Controller[idx].s_Pattern.GetBit(g_Controller[idx].s_Stepper.GetStep()) ? 1 : 0;
     }
     // update (logical combination) gates
-    digitalWrite(GateOutPin, g_Gate[0] ? HIGH : LOW);
-    digitalWrite(GateOutPin + 1, g_Gate[1] ? HIGH : LOW);
-
-    int AndGate = (g_Gate[0] && g_Gate[1]) ? HIGH : LOW;
-    int XorGate = (g_Gate[0] || g_Gate[1]) && (g_Gate[0] != g_Gate[1]) ? HIGH : LOW;
-    int NoneGate = !g_Gate[0] && !g_Gate[1] ? HIGH : LOW;
-    int NandGate = !(g_Gate[0] && g_Gate[1]) ? HIGH : LOW;
-    digitalWrite(GateOutPin + 2, AndGate);
-    digitalWrite(GateOutPin + 3, XorGate);
-    digitalWrite(GateOutPin + 4, NoneGate);
-    digitalWrite(GateOutPin + 5, NandGate);
+      g_Outputs |= g_Gate[0];
+      g_Outputs |= g_Gate[1]<<1;
+      
+    if(g_Gate[0] && g_Gate[1])
+    { // AND
+      g_Outputs |= 1<<2;
+    }
+    if(g_Gate[0] || g_Gate[1] && g_Gate[0] != g_Gate[1])
+    { // XOR
+      g_Outputs |= 1<<3;
+    }
+    if(!g_Gate[0] && !g_Gate[1])
+    { // NONE = 
+      g_Outputs |= 1<<4;
+    }
+    if(!(g_Gate[0]&&g_Gate[1]))
+    {// NAND
+      g_Outputs |= 1<<5;
+    }
+    // begin of pattern
+    if(g_Controller[0].s_Stepper.GetStep()==0)
+    {// 
+      g_Outputs |= 1<<6;
+    }
+    if(g_Controller[1].s_Stepper.GetStep()==0)
+    {// 
+      g_Outputs |= 1<<7;
+    }
   }
   // halfway step => all gates off
   else if (HiResPeriod / 2 == g_HiResStepper.GetStep())
   {
-    digitalWrite(GateOutPin, LOW);
-    digitalWrite(GateOutPin + 1, LOW);
-    digitalWrite(GateOutPin + 2, LOW);
-    digitalWrite(GateOutPin + 3, LOW);
-    digitalWrite(GateOutPin + 4, LOW);
-    digitalWrite(GateOutPin + 5, LOW);
+    g_Outputs = 0x00;
   }
 }
 
@@ -182,12 +197,17 @@ void setup()
   Serial.begin(115200);
   Serial.println("BinarySequencer...");
 
-  pinMode(GateOutPin, OUTPUT);
-  pinMode(GateOutPin + 1, OUTPUT);
-  pinMode(GateOutPin + 2, OUTPUT);
-  pinMode(GateOutPin + 3, OUTPUT);
-  pinMode(GateOutPin + 4, OUTPUT);
-  pinMode(GateOutPin + 5, OUTPUT);
+  Wire.begin();
+  // set I/O pins to outputs on mcp23017
+  Wire.beginTransmission(0x20);
+  Wire.write(0x00); // IODIRA register
+  Wire.write(0x00); // set all of port A to outputs
+  Wire.endTransmission();
+  Wire.beginTransmission(0x20);
+  Wire.write(0x01); // IODIRB register
+  Wire.write(0x00); // set all of port B to outputs
+  Wire.endTransmission();
+  //
 
   g_Controller[0].Begin(3,2,6);
   g_Controller[1].Begin(5,4,7);
@@ -216,6 +236,7 @@ void setup()
 
   Load();
 
+  Serial.println("Starting");
   unsigned long TimerPeriodMicroSeconds = 1000;// 2*120 bpm
   Timer1.initialize(TimerPeriodMicroSeconds);
   Timer1.attachInterrupt(OnTick);
@@ -247,6 +268,12 @@ void loop()
   {
     g_Controller[idx].Update();
   }
+
+  // update outputs
+   Wire.beginTransmission(0x20);
+   Wire.write(0x12); // GPIOA
+   Wire.write(g_Outputs); // port A
+   Wire.endTransmission();
 
   // update 
   for (int idx = 0; idx < NumPatterns; ++idx)
