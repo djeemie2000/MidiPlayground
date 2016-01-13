@@ -1,6 +1,5 @@
 #include <EEPROM.h>
 #include <Wire.h>
-#include "CapacitiveTouchPad.h"
 #include "LedControlMS.h"
 #include "IntBinaryPattern.h"
 #include "Stepper.h"
@@ -173,8 +172,8 @@ void Save()
 {
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
-    EEPROM.update(idx * 2, g_Controller[idx].s_Pattern.Get());
-    EEPROM.update(idx * 2 + 1, g_Controller[idx].s_Stepper.GetNumSteps());
+    EEPROM.write(idx * 2, g_Controller[idx].s_Pattern.Get());
+    EEPROM.write(idx * 2 + 1, g_Controller[idx].s_Stepper.GetNumSteps());
   }
 }
 
