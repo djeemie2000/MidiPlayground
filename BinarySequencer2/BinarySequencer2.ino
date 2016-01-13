@@ -6,7 +6,7 @@
 #include "TimerOne.h"
 #include "RotaryEncoder.h"
 #include "DigitalIn.h"
-
+#include "Mcp23017.h"
 
 const int NumLedMatrices = 1;
 const int DataPin = 12;
@@ -20,6 +20,7 @@ static const int NumPatterns = 2;
 
 int g_Gate[NumPatterns];
 uint8_t g_Outputs;
+uint8_t g_Inputs;
 
 // gate outputs
 static const int GateOutPin = A0;
@@ -194,18 +195,30 @@ void setup()
 
 
   Serial.begin(115200);
-  Serial.println("BinarySequencer...");
+  Serial.println("BinarySequencer 2...");
+  
+  g_Outputs = 0x00;
+  g_Inputs = 0xFF;//only react upon rise
 
   Wire.begin();
-  // set I/O pins to outputs on mcp23017
-  Wire.beginTransmission(0x20);
-  Wire.write(0x00); // IODIRA register
+  
+  // set I/O pins bank A to outputs on mcp23017
+  Wire.beginTransmission(MCP23017_ADDRESS);
+  Wire.write(MCP23017_IODIRA); // IODIRA register
   Wire.write(0x00); // set all of port A to outputs
   Wire.endTransmission();
-  Wire.beginTransmission(0x20);
-  Wire.write(0x01); // IODIRB register
-  Wire.write(0x00); // set all of port B to outputs
+  
+  // set I/O pins bank B to inputs on mcp23017
+  Wire.beginTransmission(MCP23017_ADDRESS);
+  Wire.write(MCP23017_IODIRB); // IODIRB register
+  Wire.write(0xFF); // set all of port B to intputs
   Wire.endTransmission();
+  
+  Wire.beginTransmission(MCP23017_ADDRESS);
+  Wire.write(MCP23017_GPPUB); // pullup register
+  Wire.write(0xFF); // set all of port B to pullup
+  Wire.endTransmission();
+  
   //
 
   g_Controller[0].Begin(3,2,6);
@@ -260,6 +273,45 @@ void ShowStep(int Idx)
   g_LedControl.setColumn(LedMatrixId, Column, Pattern);
 }
 
+void OnInputRise(int Bit)
+{
+  Serial.print(Bit);
+  Serial.println(" input rise");
+  
+  if(Bit == 0)
+  {
+    g_Controller[0].s_Pattern.Next();
+  }
+  else if(Bit==1)
+  {
+    g_Controller[0].s_Pattern.Prev();
+  }
+  else if(Bit==2)
+  {
+    g_Controller[0].s_Pattern.RotateNext();
+  }
+  else if(Bit==3)
+  {
+    g_Controller[0].s_Pattern.RotatePrev();
+  }
+  else if(Bit==4)
+  {
+       g_Controller[1].s_Pattern.Next();
+  }
+  else if(Bit==5)
+  {
+    g_Controller[1].s_Pattern.Prev();
+  }
+  else if(Bit==6)
+  {
+    g_Controller[1].s_Pattern.RotateNext();
+  }
+  else if(Bit==7)
+  {
+    g_Controller[1].s_Pattern.RotatePrev();
+  } 
+}
+
 void loop()
 {
   // update user input
@@ -269,12 +321,36 @@ void loop()
   }
 
   // update outputs
-   Wire.beginTransmission(0x20);
-   Wire.write(0x12); // GPIOA
+   Wire.beginTransmission(MCP23017_ADDRESS);
+   Wire.write(MCP23017_GPIOA); // GPIOA
    Wire.write(g_Outputs); // port A
    Wire.endTransmission();
-
-  // update 
+   
+   // read inputs
+   uint8_t PrevInputs = g_Inputs;
+   Wire.beginTransmission(MCP23017_ADDRESS);
+   Wire.write(MCP23017_GPIOB); // GPIOB
+   Wire.endTransmission();
+   Wire.requestFrom(MCP23017_ADDRESS, 1);//request 1 byte
+   g_Inputs = Wire.read();
+   
+   // TODO process inputs -> only react upon rise
+   if(PrevInputs != g_Inputs)
+   {
+     //TODO
+     for(int Bit = 0; Bit<8; ++Bit)
+     {
+       uint8_t Mask = 1<<Bit;
+       if( !(PrevInputs & Mask) && (g_Inputs & Mask))
+       {
+         // rise on Bit
+         OnInputRise(Bit);
+       }
+     }
+   }
+   //Serial.println(g_Inputs, HEX);//Debug!!!
+   
+  // update leds 
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
     ShowPattern(idx);
