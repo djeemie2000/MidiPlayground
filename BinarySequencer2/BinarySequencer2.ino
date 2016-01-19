@@ -7,12 +7,15 @@
 #include "RotaryEncoder.h"
 #include "DigitalIn.h"
 #include "Mcp23017.h"
+#include "Adafruit_LEDBackpack.h"
 
 const int NumLedMatrices = 1;
 const int DataPin = 12;
 const int ClockPin = 11;
 const int LoadPin = 10;
 LedControl g_LedControl(DataPin, ClockPin, LoadPin, NumLedMatrices);
+
+Adafruit_24bargraph g_BarGraph;
 
 CStepper<int> g_HiResStepper;
 
@@ -21,6 +24,8 @@ static const int NumPatterns = 2;
 int g_Gate[NumPatterns];
 uint8_t g_Outputs;
 uint8_t g_Inputs;
+
+static const int MaxNumSteps = sizeof(uint8_t)*8;//using uint8 binary patterns
 
 // gate outputs
 static const int GateOutPin = A0;
@@ -220,7 +225,12 @@ void setup()
   Wire.endTransmission();
   
   //
+  g_BarGraph.begin(0x70);  // pass in the address
+  g_BarGraph.clear();
+  g_BarGraph.writeDisplay();
+  //
 
+  //
   g_Controller[0].Begin(3,2,6);
   g_Controller[1].Begin(5,4,7);
 
@@ -252,7 +262,6 @@ void setup()
   unsigned long TimerPeriodMicroSeconds = 1000;// 2*120 bpm
   Timer1.initialize(TimerPeriodMicroSeconds);
   Timer1.attachInterrupt(OnTick);
-
 }
 
 void ShowPattern(int Idx)
@@ -271,6 +280,36 @@ void ShowStep(int Idx)
   const int LedMatrixId = 0;
   const int Column = 1 + Idx * 4;
   g_LedControl.setColumn(LedMatrixId, Column, Pattern);
+}
+
+void ShowBargraph(int Idx)
+{
+  int Offset = Idx ? 16 : 0;//0 or 16
+  uint8_t Pattern = g_Controller[Idx].s_Pattern.Get();  
+  int Step = g_Controller[Idx].s_Stepper.GetStep();
+  int PatternLength = g_Controller[Idx].s_Stepper.GetNumSteps();
+  for(int Bar = 0; Bar<MaxNumSteps; ++Bar)
+  {
+    uint8_t Color = LED_OFF;
+    if(Bar==Step)
+    {
+      Color = LED_YELLOW;
+    }
+    else if(Bar<PatternLength)
+    {
+      uint8_t Mask = 1<<Bar;
+      if(Pattern & Mask)
+      {
+        Color = LED_RED;
+      }
+      else
+      {
+        Color = LED_GREEN;
+      }
+    }
+    g_BarGraph.setBar(Bar+Offset, Color);  
+  }
+  g_BarGraph.writeDisplay();  
 }
 
 void OnInputRise(int Bit)
@@ -355,5 +394,6 @@ void loop()
   {
     ShowPattern(idx);
     ShowStep(idx);
+    ShowBargraph(idx);
   }
 }

@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include "Adafruit_LEDBackpack.h"
 
-Adafruit_24bargraph bar;// = Adafruit_24bargraph();
+Adafruit_24bargraph bar;
 
 void setup() {
   Serial.begin(115200);
