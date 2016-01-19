@@ -25,7 +25,7 @@ int g_Gate[NumPatterns];
 uint8_t g_Outputs;
 uint8_t g_Inputs;
 
-static const int MaxNumSteps = sizeof(uint8_t)*8;//using uint8 binary patterns
+static const int MaxNumSteps = 12;
 static const int MinNumSteps = 1;
 
 // gate outputs
@@ -44,7 +44,7 @@ struct SController
   int s_EditMode;
   CStepper<int> s_Stepper;
 
-  isl::CBinaryPattern<uint8_t> s_Pattern;
+  isl::CBinaryPattern<uint16_t> s_Pattern;
 
   SController()
     : s_Rotary()
@@ -179,8 +179,9 @@ void Save()
 {
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
-    EEPROM.write(idx * 2, g_Controller[idx].s_Pattern.Get());
-    EEPROM.write(idx * 2 + 1, g_Controller[idx].s_Stepper.GetNumSteps());
+    EEPROM.write(idx * 3, g_Controller[idx].s_Pattern.Get() & 0xFF);
+    EEPROM.write(idx * 3 + 1, g_Controller[idx].s_Pattern.Get() >> 8);
+    EEPROM.write(idx * 3 + 2, g_Controller[idx].s_Stepper.GetNumSteps());
   }
 }
 
@@ -188,8 +189,9 @@ void Load()
 {
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
-    g_Controller[idx].s_Pattern.Reset(EEPROM.read(idx * 2));
-    int NumSteps = min(8, EEPROM.read(idx * 2 + 1));
+    uint16_t Pattern = EEPROM.read(idx * 3) | (EEPROM.read(idx*3+1)<<8);
+    g_Controller[idx].s_Pattern.Reset(Pattern);
+    int NumSteps = min(MaxNumSteps, EEPROM.read(idx * 3 + 2));
     g_Controller[idx].s_Stepper.SetNumSteps(NumSteps);
   }
 }
@@ -268,7 +270,7 @@ void setup()
 
 void ShowPattern(int Idx)
 {
-  uint8_t Pattern = g_Controller[Idx].s_Pattern.Get();  
+  uint16_t Pattern = g_Controller[Idx].s_Pattern.Get();  
   const int LedMatrixId = 0;
   const int Column = Idx * 4;
   g_LedControl.setColumn(LedMatrixId, Column, Pattern);
@@ -277,7 +279,7 @@ void ShowPattern(int Idx)
 void ShowStep(int Idx)
 {  
   int Step = g_Controller[Idx].s_Stepper.GetStep();
-  uint8_t Pattern = 1 << Step;
+  uint16_t Pattern = 1 << Step;
   
   const int LedMatrixId = 0;
   const int Column = 1 + Idx * 4;
@@ -286,8 +288,8 @@ void ShowStep(int Idx)
 
 void ShowBargraph(int Idx)
 {
-  int Offset = Idx ? 16 : 0;//0 or 16
-  uint8_t Pattern = g_Controller[Idx].s_Pattern.Get();  
+  int Offset = Idx ? 12 : 0;//0 or 16
+  uint16_t Pattern = g_Controller[Idx].s_Pattern.Get();  
   int Step = g_Controller[Idx].s_Stepper.GetStep();
   int PatternLength = g_Controller[Idx].s_Stepper.GetNumSteps();
   for(int Bar = 0; Bar<MaxNumSteps; ++Bar)
@@ -299,7 +301,7 @@ void ShowBargraph(int Idx)
     }
     else //if(Bar<PatternLength)
     {
-      uint8_t Mask = 1<<Bar;
+      uint16_t Mask = 1<<Bar;
       if(Pattern & Mask)
       {
         Color = LED_RED;
@@ -394,8 +396,8 @@ void loop()
   // update leds 
   for (int idx = 0; idx < NumPatterns; ++idx)
   {
-    ShowPattern(idx);
-    ShowStep(idx);
+    //ShowPattern(idx);
+    //ShowStep(idx);
     ShowBargraph(idx);
   }
 }
