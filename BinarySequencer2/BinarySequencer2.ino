@@ -26,6 +26,7 @@ uint8_t g_Outputs;
 uint8_t g_Inputs;
 
 static const int MaxNumSteps = sizeof(uint8_t)*8;//using uint8 binary patterns
+static const int MinNumSteps = 1;
 
 // gate outputs
 static const int GateOutPin = A0;
@@ -84,7 +85,7 @@ struct SController
       else 
       {
         int NumSteps = s_Stepper.GetNumSteps() + 1;
-        if (NumSteps <= 8)
+        if (NumSteps <= MaxNumSteps)
         {
           s_Stepper.SetNumSteps(NumSteps);
         } 
@@ -105,7 +106,7 @@ struct SController
       else
       {
         int NumSteps = s_Stepper.GetNumSteps() - 1;
-        if (1 <= NumSteps)
+        if (MinNumSteps <= NumSteps)
         {
           s_Stepper.SetNumSteps(NumSteps);
         } 
@@ -227,6 +228,7 @@ void setup()
   //
   g_BarGraph.begin(0x70);  // pass in the address
   g_BarGraph.clear();
+  g_BarGraph.setBrightness(2);
   g_BarGraph.writeDisplay();
   //
 
@@ -295,7 +297,7 @@ void ShowBargraph(int Idx)
     {
       Color = LED_YELLOW;
     }
-    else if(Bar<PatternLength)
+    else //if(Bar<PatternLength)
     {
       uint8_t Mask = 1<<Bar;
       if(Pattern & Mask)
@@ -304,7 +306,7 @@ void ShowBargraph(int Idx)
       }
       else
       {
-        Color = LED_GREEN;
+        Color = LED_OFF;//LED_GREEN;
       }
     }
     g_BarGraph.setBar(Bar+Offset, Color);  
