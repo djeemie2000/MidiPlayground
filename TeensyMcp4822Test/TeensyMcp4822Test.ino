@@ -73,7 +73,26 @@ void TestSawInterrupt()
   delay(1000);
 }
 
-void setup() {
+void TestAccuracy_NewApi()
+{
+  Serial.println("Test accuracy new API...");
+  for(int Value = 64; Value<4096; Value += 128)
+  {
+   mcp48dac::SetOutput(Value, mcp48dac::Channel_A, mcp48dac::Gain_x2, 0);
+   mcp48dac::SetOutput(Value, mcp48dac::Channel_B, mcp48dac::Gain_x2, 0);   
+
+   mcp48dac::SetOutput(4096-Value, mcp48dac::Channel_A, mcp48dac::Gain_x2, 1);
+   mcp48dac::SetOutput(4096-Value, mcp48dac::Channel_B, mcp48dac::Gain_x2, 1);   
+
+   Serial.print("Out= ");
+    Serial.println(Value);
+    delay(500);
+  }
+}
+
+
+void setup() 
+{
   // put your setup code here, to run once:
   Serial.begin(115200);
   delay(1000);
@@ -81,17 +100,18 @@ void setup() {
 
   analogReadResolution(12);
   
-  mcp48_begin();  
-  mcp48_setOutput(0);
+  //mcp48_begin();  
+  //mcp48_setOutput(0);
+  mcp48dac::Begin(2);
   delay(100);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   //TestSpeed();
-  //TestAccuracy();
+  TestAccuracy_NewApi();
   //delay(2000);
   //TestSaw();
-  TestSawInterrupt();
+  //TestSawInterrupt();
 }
 
