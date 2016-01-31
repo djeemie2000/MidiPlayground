@@ -1,97 +1,111 @@
-#include <SPI.h>
-#include "spi4teensy3.h"
-#include "TeensyMcpDac.h"
-#include "RotaryEncoder.h"
 
-const int Rotary1PinA = 2;
-const int Rotary1PinB = Rotary1PinA + 1;
+#include "MIDI.h"//serial midi on Serial1 
+//#include "usb_api.h"
 
-static const int NumEncoders = 2;
-CRotaryEncoder Encoder[NumEncoders];
+// use USB for midi in (and midi out) and use Serial1 as serial out
+// comment out for using Serial1 as midi in and use usb as serial out
+#define USE_USB 
 
-void Test()
+// use this to switch between serial1 and usb midi
+#ifdef USE_USB
+#define MIDI_USED usbMIDI
+#define SERIAL_USED Serial1
+#endif
+
+#ifndef USE_USB
+#define MIDI_USED MIDI
+#define SERIAL_USED Serial
+#endif
+
+void OnNoteOn(byte Channel, byte Note, byte Velocity)
 {
-  Serial1.println("Testing...");
-
-  for(int Value = 0; Value<4096; Value += 1024)
-  {
-    Serial1.print("Value = ");
-    Serial1.println(Value);
-    mcp48_setOutput(0, GAIN_1, 1, Value);
-    mcp48_setOutput(1, GAIN_1, 1, Value);
-
-    delay(1000);
-  }
+  SERIAL_USED.print("NoteOn : ch ");
+  SERIAL_USED.print(Channel, DEC);
+  SERIAL_USED.print(" note ");
+  SERIAL_USED.print(Note, DEC);
+  SERIAL_USED.print(" vel ");
+  SERIAL_USED.println(Velocity);
 }
 
-void setup() 
+void OnNoteOff(byte Channel, byte Note, byte Velocity)
 {
-  // put your setup code here, to run once:
-  Serial1.begin(115200);
-  delay(1000);
-  Serial1.println("Teensy Midi2CV...");
-
-  Serial1.println("Configuring...");
-  for(int idx = 0; idx<NumEncoders; ++idx)
-  {
-    Encoder[idx].Begin(Rotary1PinA+idx*2, Rotary1PinB+idx*2);
-  }
-  
-  mcp48_begin();  
-  mcp48_setOutput(0, GAIN_1, 1, 2048);
-  mcp48_setOutput(1, GAIN_1, 1, 2048); 
-  delay(1000);
-
-  Serial1.println("Start");
+  SERIAL_USED.print("NoteOff : ch ");
+  SERIAL_USED.print(Channel, DEC);
+  SERIAL_USED.print(" note ");
+  SERIAL_USED.print(Note, DEC);
+  SERIAL_USED.print(" vel ");
+  SERIAL_USED.println(Velocity);
 }
 
-void loop() 
+void OnControlChange(byte Channel, byte Number, byte Value)
 {
-  //while(true)
-  {
-    Test();
-  }
+  SERIAL_USED.print("CC : ch ");
+  SERIAL_USED.print(Channel, DEC);
+  SERIAL_USED.print(" nr ");
+  SERIAL_USED.print(Number, DEC);
+  SERIAL_USED.print(" val ");
+  SERIAL_USED.println(Value);
+}
 
+void OnPitchBend(byte Channel, int Bend)
+{
+  SERIAL_USED.print("PitchBend : ch ");
+  SERIAL_USED.print(Channel, DEC);
+  SERIAL_USED.print(" val ");
+  SERIAL_USED.println(Bend);
+}
 
-  int PrevPosition[NumEncoders] = {0};
-  int PrevValue[NumEncoders] = {2048};
-  
+void TestSerial1In()
+{
+  #ifndef USE_USB
+
+  Serial.println("Testing serial 1 in...");
   while(true)
   {
-    for(int idx = 0; idx<NumEncoders; ++idx)
+    if(0<Serial1.available())
     {
-      // encoder position has no boundaries, but value must be in [0,4096[
-      Encoder[idx].Read();
-      int Position = Encoder[idx].GetPosition();
-
-      if(PrevPosition[idx]!=Position)
-      {
-          //Serial1.print(idx);
-          //Serial1.println(Position);
-      
-        int Value = PrevValue[idx] + 16*(Position - PrevPosition[idx]);
-        if(Value<0)
-        { 
-          Value=0;
-        }
-        else if(4095<Value)
-        {
-          Value = 4095;
-        }
-        if(PrevValue[idx]!=Value)
-        {
-          mcp48_setOutput(idx, GAIN_1, 1, Value);//TODO support idx>1
-          Serial1.print(idx);
-          Serial1.print(" : Value = ");
-          Serial1.println(Value);
-          PrevValue[idx] = Value;        
-        }
-
-        PrevPosition[idx] = Position;
-      } 
+      int Byte = Serial1.read();
+      Serial.print(' 0x');
+      Serial.println(Byte, HEX);
     }
-    //Serial1.println();
-    delay(1);//needed?????? 
   }
+  
+  #endif
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  SERIAL_USED.begin(115200);
+  delay(1000);//?
+  
+  SERIAL_USED.println("Teensy Midi In test...");
+
+  #ifndef USE_USB
+  MIDI_USED.begin(MIDI_CHANNEL_OMNI, 115200);//for now, use midi-ox or similar
+  #endif
+
+  //TestSerial1In();
+  
+  MIDI_USED.setHandleNoteOn(OnNoteOn);
+  MIDI_USED.setHandleNoteOff(OnNoteOff);
+  MIDI_USED.setHandleControlChange(OnControlChange);
+  #ifndef USE_USB
+  MIDI_USED.setHandlePitchBend(OnPitchBend);
+  #endif
+  #ifdef USE_USB
+  MIDI_USED.setHandlePitchChange(OnPitchBend);
+  #endif
+  
+  pinMode(13, OUTPUT);
+  SERIAL_USED.println("Starting..");
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  for(int Repeat = 0; Repeat<100000; ++Repeat)
+  {
+    MIDI_USED.read();
+  }
+  //SERIAL_USED.println("Midi read 100000x");
 }
 
