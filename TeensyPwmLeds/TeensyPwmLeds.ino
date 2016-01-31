@@ -69,10 +69,10 @@ class CPwmLed
       }
       else if(m_Mode == BlinkSlowMode)
       {
-        Brightness = (Millis>1) & 0xFF;
+        Brightness = (Millis>>1) & 0xFF;
       }
 
-      analogWrite(m_Pin, m_Brightness);
+      analogWrite(m_Pin, Brightness);
     }
 
     
@@ -117,43 +117,47 @@ void loop()
   // on/off 
   for(int Led = 0; Led<NumPwmLeds; ++ Led)
   {
-    Serial.println(Led);
-    Serial.println("On");
-    g_Led[Led].On();
-    RunLeds(Led, 500);
-    Serial.println("Off");
-    g_Led[Led].Off();
-    RunLeds(Led, 500);
+    for(int Repeat = 0; Repeat <6; ++Repeat)
+    {
+      Serial.println(Led);
+      Serial.println("On");
+      g_Led[Led].On();
+      RunLeds(Led, 500);
+      Serial.println("Off");
+      g_Led[Led].Off();
+      RunLeds(Led, 500);
+    }
   }
-  
+
   // on for different brightnesses
   for(int Brightness = 32; Brightness<256; Brightness += 32)
   {
       for(int Led = 0; Led<NumPwmLeds; ++ Led)
-      {
+      {        
         Serial.println(Led);
         Serial.print("Brightness");
         Serial.println(Brightness);
         g_Led[Led].SetBrightness(Brightness);
-        RunLeds(Led, 250);
+        g_Led[Led].On();
+        RunLeds(Led, 1000);
       }
   }
   
   // blink
-for(int Led = 0; Led<NumPwmLeds; ++ Led)
+  for(int Led = 0; Led<NumPwmLeds; ++ Led)
   {
     Serial.println(Led);
     Serial.println("BlinkNormal");
     g_Led[Led].BlinkNormal();
-    RunLeds(Led, 2000);
+    RunLeds(Led, 4000);
     
-    Serial.println("BlinkFast");
-    g_Led[Led].BlinkFast();
-    RunLeds(Led, 2000);
-
     Serial.println("BlinkSlow");
     g_Led[Led].BlinkSlow();
-    RunLeds(Led, 2000);
+    RunLeds(Led, 4000);
+
+    Serial.println("BlinkFast");
+    g_Led[Led].BlinkFast();
+    RunLeds(Led, 4000);
   }
 
 }
