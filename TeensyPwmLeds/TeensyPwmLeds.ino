@@ -61,15 +61,15 @@ class CPwmLed
       else if(m_Mode == BlinkNormalMode)
       {
         // use last 8 bits of millis => period of 256 mSec ~ 4 Hz
-        Brightness = Millis & 0xFF;
+        Brightness = Millis & 0x80 ? 255 : 0;//  Millis & 0xFF;
       }
       else if(m_Mode == BlinkFastMode)
       {
-        Brightness = (Millis<<1) & 0xFF;
+        Brightness = Millis & 0x40 ? 255 : 0; //(Millis<<1) & 0xFF;
       }
       else if(m_Mode == BlinkSlowMode)
       {
-        Brightness = (Millis>>1) & 0xFF;
+        Brightness = Millis & 0x0100 ? 255 : 0;//(Millis>>1) & 0xFF;
       }
 
       analogWrite(m_Pin, Brightness);
@@ -117,15 +117,15 @@ void loop()
   // on/off 
   for(int Led = 0; Led<NumPwmLeds; ++ Led)
   {
-    for(int Repeat = 0; Repeat <6; ++Repeat)
+    for(int Repeat = 0; Repeat <1; ++Repeat)
     {
       Serial.println(Led);
       Serial.println("On");
       g_Led[Led].On();
-      RunLeds(Led, 500);
+      RunLeds(Led, 1000);
       Serial.println("Off");
       g_Led[Led].Off();
-      RunLeds(Led, 500);
+      RunLeds(Led, 1000);
     }
   }
 
