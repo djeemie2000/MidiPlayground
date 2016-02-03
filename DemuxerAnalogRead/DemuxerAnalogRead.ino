@@ -8,9 +8,9 @@ Reading multiple analog input through a 4051 mux/demux
 
 const int AnalogReadPin = A0;// common analog read pin
 
-const int SelectPin0 = 2;
-const int SelectPin1 = 3;
-const int SelectPin2 = 4;
+const int SelectPin0 = A1;//2;
+const int SelectPin1 = A2;//3;
+const int SelectPin2 = A3;//4;
 
 void setup()
 {
@@ -20,7 +20,7 @@ void setup()
   pinMode(SelectPin1, OUTPUT);
   pinMode(SelectPin2, OUTPUT); 
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   Serial.println("Starting....");
 }
@@ -41,7 +41,7 @@ void loop()
 {
    Serial.println("Measuring...");
    
-   for(int Input = 0; Input<2; ++Input)
+   for(int Input = 0; Input<4; ++Input)
    {
      int Value = AnalogRead(Input);
      Serial.print(Input);
