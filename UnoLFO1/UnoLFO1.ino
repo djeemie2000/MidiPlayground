@@ -5,6 +5,8 @@
 const int AnalogInPin = A0;
 const int AnalogInPin2 = A1;
 const int DigitalOutPin0 = A2;
+const int SlopeSelectInPin = 5;
+const int SlopeSignInPin = 6;
 
 static const int g_SamplingFrequency = 1<<13;//8192
 
@@ -13,6 +15,7 @@ class CController
   public:
     CController()
      : m_Phase(0)
+//     , m_ScaledValue(0)
      , m_SelectedSlope(0)
      , m_SlopeSign(1)
     {
@@ -28,6 +31,8 @@ class CController
       pinMode(DigitalOutPin0+1, OUTPUT);
       pinMode(DigitalOutPin0+2, OUTPUT);
       pinMode(DigitalOutPin0+3, OUTPUT);
+      pinMode(SlopeSelectInPin, INPUT_PULLUP);
+      pinMode(SlopeSignInPin, INPUT_PULLUP);     
       mcp48dac::Begin(1);
     }
 
@@ -39,19 +44,34 @@ class CController
     }
 
     void OnTick()
-    {
-      m_Phase += m_PhaseIncrease[m_SelectedSlope]*m_SlopeSign;
-      // mcp update   
-      unsigned int Value = ( m_Phase >> (PhaseScale-ValueScale) ) & ValueMask;
-      mcp48dac::SetOutput(Value, mcp48dac::Channel_A, mcp48dac::Gain_x2, 0);
+    {      
+      // update phase
+      m_Phase += m_PhaseIncrease[m_SelectedSlope];
+
       // digital output updates: period, period/2, period*2
-      uint32_t PeriodPin = (m_Phase >> PhaseScale) & 0x01;
+      uint32_t PeriodPin = (m_Phase >> (PhaseScale+1)) & 0x01;
       digitalWrite(DigitalOutPin0, !PeriodPin ? HIGH : LOW);
-      digitalWrite(DigitalOutPin0+1, PeriodPin ? HIGH : LOW);
+
       
-      uint32_t PeriodDiv2Pin = (m_Phase >> (PhaseScale-1)) & 0x01;
+      uint32_t Periodx2Pin = (m_Phase >> (PhaseScale+2)) & 0x01;
+      digitalWrite(DigitalOutPin0+1, Periodx2Pin ? HIGH : LOW);
+      
+      uint32_t PeriodDiv2Pin = (m_Phase >> (PhaseScale)) & 0x01;
       digitalWrite(DigitalOutPin0+2, !PeriodDiv2Pin ? HIGH : LOW);
       digitalWrite(DigitalOutPin0+3, PeriodDiv2Pin ? HIGH : LOW);
+
+      // read digital inputs
+      m_SelectedSlope = ( digitalRead(SlopeSelectInPin)==HIGH && digitalRead(SlopeSignInPin)==HIGH ) ? 0 : 1;
+      //m_SlopeSign = digitalRead(SlopeSignInPin)==HIGH ? 1 : -1;
+      
+      // LFO (mcp) update
+      unsigned int Value = ( m_Phase >> (PhaseScale-ValueScale) ) & ValueMask;
+      if(PeriodDiv2Pin)// Value & (1<<(PhaseScale-1)))
+      {
+        Value = (1<<ValueScale)-1-Value;//~Value;
+      }
+      
+      mcp48dac::SetOutput(Value, mcp48dac::Channel_A, mcp48dac::Gain_x2, 0);      
     }
    
   private:
@@ -94,10 +114,9 @@ void OnTick()
 
 void StartTimer()
 {
-  const int SamplingFrequency = 1<<13;//8192;
-  const unsigned long PeriodMicroSeconds = 1000000ul / SamplingFrequency;
+  const unsigned long PeriodMicroSeconds = 1000000ul / g_SamplingFrequency;
   Serial.print("Fs=");
-  Serial.print(SamplingFrequency);
+  Serial.print(g_SamplingFrequency);
   Serial.print(" Period=");
   Serial.print(PeriodMicroSeconds);
   Serial.println(" uSec");
