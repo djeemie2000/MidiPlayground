@@ -4,11 +4,11 @@
 #include "UintSkewedPhasor.h"
 
 const int SpeedAInPin = A0;
-const int SpeedBInPin = A1;
-const int SkewAInPin = A2;
+const int SkewAInPin = A1;
+const int SpeedBInPin = A2;
 const int SkewBInPin = A3;
 
-static const uint32_t g_SamplingFrequency = 1<<13;//8192
+static const uint32_t g_SamplingFrequency = 1<<14;//2*8192
 
 class CController
 {
@@ -20,7 +20,7 @@ class CController
     }
 
     void Begin()
-    {
+    {      
       pinMode(SpeedAInPin, INPUT);
       pinMode(SpeedBInPin, INPUT);
       pinMode(SkewAInPin, INPUT);
@@ -32,33 +32,74 @@ class CController
     void Update()
     {
       // read pots for speed, skew
-      int PhaseIncreaseA = 8 + 4*analogRead(SpeedAInPin);// TODO check scaling
-      int SkewA = max(1, analogRead(SkewAInPin));
+      const int MinPhaseIncrease = 8;
+      const int PhaseIncrMultiplier = 2;
+      int PhaseIncreaseA = MinPhaseIncrease + PhaseIncrMultiplier*analogRead(SpeedAInPin);// TODO check scaling
+      int SkewA = min(1008, max(16, analogRead(SkewAInPin)));
       m_PhasorA.SetPhaseIncrease(PhaseIncreaseA, SkewA);
 
-      int PhaseIncreaseB = 8 + 4*analogRead(SpeedBInPin);// TODO check scaling
-      int SkewB = max(1, analogRead(SkewBInPin));
-      m_PhasorB.SetPhaseIncrease(PhaseIncreaseB, SkewB);      
+      int PhaseIncreaseB = MinPhaseIncrease + PhaseIncrMultiplier*analogRead(SpeedBInPin);// TODO check scaling
+      int SkewB = min(1008, max(16, analogRead(SkewBInPin)));
+      m_PhasorB.SetPhaseIncrease(PhaseIncreaseB, SkewB); 
+
+      return;
+      Serial.print("Incr ");
+      Serial.print(PhaseIncreaseA);
+      Serial.print(" Skew ");
+      Serial.print(SkewA);
+      Serial.print(" Incr ");
+      Serial.print(PhaseIncreaseB);
+      Serial.print(" Skew ");
+      Serial.print(SkewB);
+      Serial.print(" ");
+      Serial.println(m_TickCount); 
+
+      delay(500);      
+    }
+
+    void DebugOnTick()
+    {          
+      // update phasors
+      uint32_t PhaseA = m_PhasorA();
+      uint32_t LfoValueA = uisl::CalcTriangle<uint32_t, ValueScale>(PhaseA);
+      //uint32_t LfoValueB = m_PhasorB();//.UpdateTriangle();
+
+      ++m_TickCount;
+
+      //return;
+      if(m_TickCount%32==0)
+      {
+        //Serial.print(m_TickCount);
+        //Serial.print(" : ");
+        //Serial.print(PhaseA & 0xFFF);
+        //Serial.print(" ");
+        Serial.print(LfoValueA);
+        Serial.println();        
+      }
     }
 
     void OnTick()
     {      
       // update phasors
-      uint32_t LfoValueA = m_PhasorA.UpdateTriangle();
-      uint32_t LfoValueB = m_PhasorB.UpdateTriangle();
+      uint32_t LfoValueA = uisl::CalcTriangle<uint32_t, ValueScale>(m_PhasorA());
+      uint32_t LfoValueB = uisl::CalcTriangle<uint32_t, ValueScale>(m_PhasorB());
       
       mcp48dac::SetOutput(LfoValueA, mcp48dac::Channel_A, mcp48dac::Gain_x2, 0);      
       mcp48dac::SetOutput(LfoValueB, mcp48dac::Channel_B, mcp48dac::Gain_x2, 0);    
 
       // TODO pulse out on digital outputs ~ skewed phase
+
+      ++m_TickCount;
     }
    
   private:
     static const int ValueScale = 12;
-    static const int PhaseScale = 24;
+    static const int PhaseScale = 20;//24;
      
     uisl::CSkewedPhasor<ValueScale, PhaseScale> m_PhasorA;
     uisl::CSkewedPhasor<ValueScale, PhaseScale> m_PhasorB;
+
+    uint32_t m_TickCount;
 };
 
 CController g_Controller;
@@ -125,18 +166,20 @@ void setup()
   Serial.println("Uno LFO 1...");
 
   g_Controller.Begin();
-
+  
   TestSpeed();
   
   delay(1000);
-  //Serial.println("Starting");
   StartTimer(g_SamplingFrequency);
 }
 
 void loop() 
 {
-//  TestSpeed();
-//  TestAccuracy_NewApi();
   g_Controller.Update();
+//  for(uint32_t Repeat = 0; Repeat<g_SamplingFrequency/64; ++Repeat)
+//  {
+//    g_Controller.DebugOnTick();
+//    delay(1);
+//  }
 }
 

@@ -33,7 +33,7 @@ T CalcNegPulse(T Phase)
     return (Phase & (1<<Scale)) ?  (1<<Scale) -1 : 0;
 }
 
-template<int OutputScale = 12, int InternalPhaseScale = 24>
+template<uint32_t OutputScale = 12, uint32_t InternalPhaseScale = 24>
 class CSkewedPhasor
 {
 public:
@@ -46,15 +46,34 @@ public:
     // Note: phase increase is in InternalPhaseScale
     void SetPhaseIncrease(uint32_t PhaseIncr, uint32_t Skew)
     {
-        m_PhaseIncr0 = (PhaseIncr*1024)/(2*Skew);
-        m_PhaseIncr1 = (PhaseIncr*1024)/(2*(1024-Skew));
+	const uint32_t MaxSkew = 1024;
+        m_PhaseIncr0 = (PhaseIncr*MaxSkew)/(2*Skew);
+        m_PhaseIncr1 = (PhaseIncr*MaxSkew)/(2*(MaxSkew-Skew));
     }
 
     uint32_t operator()()
     {
         uint32_t Phase = m_Phase >> PhaseUpScale;
-        m_Phase += (m_Phase & (1<<InternalPhaseScale)) ? m_PhaseIncr1 : m_PhaseIncr0;
-        return Phase;
+//	uint32_t IncrSelect = (m_Phase & (uint32_t(1)<<InternalPhaseScale)); 
+//	uint32_t PhaseIncr = IncrSelect ? m_PhaseIncr1 : m_PhaseIncr0;
+	uint32_t PhaseIncr = (Phase & (1<<OutputScale)) ? m_PhaseIncr1 : m_PhaseIncr0;
+	m_Phase += PhaseIncr;
+
+	return Phase;
+
+//	Serial.print(m_PhaseIncr0, HEX);
+//	Serial.print(" ");
+//	Serial.print(m_PhaseIncr1, HEX);
+//	Serial.print(" ");
+//	Serial.print(IncrSelect, HEX);
+//	Serial.print(" ");
+//	Serial.print(PhaseIncr, HEX);
+//	Serial.print(" ");
+//	Serial.print(Phase&0xFFF, DEC);
+//	Serial.print(" ");
+//	Serial.println(Phase, HEX);
+
+//        return Phase;
     }
 
     uint32_t UpdateTriangle()
@@ -63,7 +82,7 @@ public:
         //uint32_t Value = (Phase & (1<<OutputScale)) ?  (~Phase) & 0x0FFF :  Phase & 0x0FFF;
         //m_Phase += (m_Phase & (1<<PhaseScale)) ? m_PhaseIncr1 : m_PhaseIncr0;
         //return Value;
-        return CalcTriangle<uint32_t, OutputScale>(this->operator ()());
+        return CalcTriangle<uint32_t, OutputScale>(this->operator()());
     }
 
 //    void DebugLog(uint32_t PhaseIncr, uint32_t Skew)
@@ -87,8 +106,12 @@ public:
 //       std::cout << Period1 << " + " << Period2 << " = " << Period12 << " vs " << Period << std::endl;
 //    }
 
+     uint32_t GetPhaseIncr0() const { return m_PhaseIncr0;	}
+     uint32_t GetPhaseIncr1() const { return m_PhaseIncr1;	}
+	
+
 private:
-    static const int PhaseUpScale = InternalPhaseScale-OutputScale;
+    static const uint32_t PhaseUpScale = InternalPhaseScale-OutputScale;
 
     uint32_t m_Phase;
     uint32_t m_PhaseIncr0;
