@@ -1,6 +1,6 @@
 
 const int ClockInPin = 2;
-//const int ResetInPin = 3;
+const int ResetInPin = 3;
 
 struct SController
 {
@@ -20,17 +20,24 @@ struct SController
     m_CurrentStep = 0;
   }
 
-  void OnRise()
+  void OnClockRise()
   {
     ++m_ChangeCounter;
     Advance();
     //m_State = true;
   }
 
-  void OnFall()
+  void OnClockFall()
   {
     ++m_ChangeCounter;
     m_State = false;
+  }
+
+  void OnReset()
+  {
+    ++m_ChangeCounter;    
+    m_CurrentStep = 0;
+    m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
   void Advance()
@@ -54,20 +61,25 @@ struct SController
 
 SController g_Controller;
 
-void OnChange()
+void OnClockChange()
 {
   if(digitalRead(ClockInPin)==HIGH)
   {
-    g_Controller.OnRise();
+    g_Controller.OnClockRise();
   }
   else
   {
-    g_Controller.OnFall();
+    g_Controller.OnClockFall();
   }
   
   digitalWrite(13, g_Controller.m_State?HIGH:LOW);
 }
 
+void OnResetRise()
+{
+  g_Controller.OnReset();
+  digitalWrite(13, g_Controller.m_State?HIGH:LOW);
+}
 
 void setup() 
 {
@@ -78,8 +90,9 @@ void setup()
   pinMode(13, OUTPUT);
   g_Controller.Begin();
 
-  attachInterrupt(digitalPinToInterrupt(ClockInPin), OnChange, CHANGE);
   // only 1 interrupt can be attached to a pin
+  attachInterrupt(digitalPinToInterrupt(ClockInPin), OnClockChange, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ResetInPin), OnResetRise, RISING);
 }
 
 void loop() 
