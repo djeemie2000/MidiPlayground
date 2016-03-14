@@ -11,6 +11,7 @@ struct SController
     m_Pattern = 0x1315;
     m_ActiveMask = 0xFFFF;
     m_CurrentStep = 0;
+    m_Reset = false;
   }
   
   void Begin()
@@ -18,6 +19,7 @@ struct SController
     m_ChangeCounter = 0;
     m_State = false;
     m_CurrentStep = 0;
+    m_Reset = false;
   }
 
   void OnClockRise()
@@ -35,17 +37,27 @@ struct SController
 
   void OnReset()
   {
-    ++m_ChangeCounter;    
-    m_CurrentStep = 0;
-    m_State = (m_Pattern & (1<<m_CurrentStep));
+    m_Reset = true;
+    
+    //++m_ChangeCounter;    
+    //m_CurrentStep = 0;
+    //m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
   void Advance()
   {
-    ++m_CurrentStep;
-    if(!(m_ActiveMask&(1<<m_CurrentStep)))
+    if(m_Reset)
     {
       m_CurrentStep = 0;
+      m_Reset = false;
+    }
+    else
+    {
+      ++m_CurrentStep;
+      if(!(m_ActiveMask&(1<<m_CurrentStep)))
+      {
+        m_CurrentStep = 0;
+      }
     }
 
     m_State = (m_Pattern & (1<<m_CurrentStep));
@@ -57,6 +69,7 @@ struct SController
   uint32_t m_Pattern;
   uint32_t m_ActiveMask;
   int m_CurrentStep;
+  bool m_Reset;
 };
 
 SController g_Controller;
