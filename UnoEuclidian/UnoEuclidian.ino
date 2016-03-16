@@ -106,6 +106,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("Uno euclidian rythm generator...");
   pinMode(ClockInPin, INPUT);
+  pinMode(ResetInPin, INPUT_PULLUP);
   pinMode(13, OUTPUT);
   g_Controller.Begin();
   g_LedBar.begin(0x70);//default address
