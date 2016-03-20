@@ -1,8 +1,13 @@
 #include <Wire.h>
 #include "Adafruit_LEDBackpack.h"
+#include "BoundedValue.h"
+#include "Euclidian.h"
+#include "RotaryEncoder.h"
 
 const int  g_NumLeds = 24;
 Adafruit_24bargraph g_LedBar;
+CRotaryEncoder g_Encoder1;
+CRotaryEncoder g_Encoder2;
 
 
 const int ClockInPin = 2;
@@ -11,6 +16,8 @@ const int ResetInPin = 3;
 struct SController
 {
   SController()
+   : m_PatternLength(1, g_NumLeds)
+   , m_PatternFills(0, g_NumLeds)
   {
     m_ChangeCounter = 0;
     m_State = false;
@@ -18,6 +25,8 @@ struct SController
     m_ActiveMask = 0xFFFF;
     m_CurrentStep = 0;
     m_Reset = false;
+    m_PatternLength.Set(16);
+    m_PatternFills.Set(7);
   }
   
   void Begin()
@@ -26,6 +35,13 @@ struct SController
     m_State = false;
     m_CurrentStep = 0;
     m_Reset = false;
+
+    m_PatternLength.SetInterval(1, 16);
+    m_PatternLength.Set(12);
+    m_PatternFills.SetInterval(0, m_PatternLength.Get());
+    m_PatternFills.Set(7);
+    m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
+    m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
   }
 
   void OnClockRise()
@@ -69,6 +85,20 @@ struct SController
     m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
+  void UpdatePattern(int DeltaLength, int DeltaFills)
+  {
+    if(DeltaLength || DeltaFills)
+    {
+      m_PatternLength.SetChange(DeltaLength);  
+      
+      m_PatternFills.SetInterval(0, m_PatternLength.Get());
+      m_PatternFills.SetChange(DeltaFills);
+
+      m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
+      m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
+    }
+  }
+
   int m_ChangeCounter;
   bool m_State;
   
@@ -76,6 +106,9 @@ struct SController
   uint32_t m_ActiveMask;
   int m_CurrentStep;
   bool m_Reset;
+
+  CBoundedValue<int> m_PatternLength;
+  CBoundedValue<int> m_PatternFills;
 };
 
 SController g_Controller;
@@ -109,6 +142,8 @@ void setup()
   pinMode(ResetInPin, INPUT_PULLUP);
   pinMode(13, OUTPUT);
   g_Controller.Begin();
+  g_Encoder1.Begin(4,5);
+  g_Encoder2.Begin(6,7);
   g_LedBar.begin(0x70);//default address
   g_LedBar.clear();
   g_LedBar.writeDisplay();
@@ -166,6 +201,17 @@ void SerialDebug()
     {
       Serial.println("Off");
     }
+
+    if(g_Controller.m_State)
+    {
+      Serial.print("L ");
+      Serial.print(g_Controller.m_PatternLength);
+      Serial.print(" F ");
+      Serial.println(g_Controller.m_PatternFills);
+    
+      Serial.println(g_Controller.m_ActiveMask, BIN);
+      Serial.println(g_Controller.m_Pattern, BIN);
+    }
   }
 }
 
@@ -174,10 +220,13 @@ void loop()
   // the serial print below is for debug purposes:
   SerialDebug();
 
-  // TODO read rotary encoders:
+  // read rotary encoders:
+  g_Encoder1.Read();
+  g_Encoder2.Read();
   // change mask length
   // change pattern fills
   // change pattern offset = bitwise rotation of pattern
+  g_Controller.UpdatePattern(g_Encoder1.GetChange(), g_Encoder2.GetChange());
 
   ShowLeds();
       

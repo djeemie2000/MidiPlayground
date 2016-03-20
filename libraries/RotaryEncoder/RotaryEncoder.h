@@ -9,6 +9,7 @@ public:
     void Begin(int PinA, int PinB);
     void Read();
     int GetPosition() const;
+    int GetChange() const;
     void Reset();//!< reset to position, change count, ...
 
     int GetChangeCount() const;
@@ -19,6 +20,7 @@ private:
     int m_PinB;
     unsigned int m_RotaryHistory;
     int m_Position;
+    int m_Change;
     int m_ChangeCount;
 };
 

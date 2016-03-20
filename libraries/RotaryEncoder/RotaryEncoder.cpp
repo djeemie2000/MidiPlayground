@@ -6,6 +6,7 @@ CRotaryEncoder::CRotaryEncoder()
  , m_PinB(-1)
  , m_RotaryHistory(0)
  , m_Position(0)
+ , m_Change(0)
  , m_ChangeCount(0)
 {
 }
@@ -21,6 +22,8 @@ void CRotaryEncoder::Begin(int PinA, int PinB)
 
 void CRotaryEncoder::Read()
 {
+    int PrevPosition = m_Position;
+
     unsigned int NewRotaryValue = 2*(1-digitalRead(m_PinA)) + (1-digitalRead(m_PinB));
     unsigned int PrevRotaryValue = m_RotaryHistory%4;
     if(NewRotaryValue != PrevRotaryValue)
@@ -56,11 +59,18 @@ void CRotaryEncoder::Read()
 
       m_RotaryHistory = 4*m_RotaryHistory + NewRotaryValue;
     }
+
+    m_Change = m_Position-PrevPosition;
 }
 
 int CRotaryEncoder::GetPosition() const
 {
     return m_Position;
+}
+
+int CRotaryEncoder::GetChange() const
+{
+    return m_Change;
 }
 
 void CRotaryEncoder::Reset()
