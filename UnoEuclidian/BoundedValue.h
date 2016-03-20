@@ -4,9 +4,9 @@ template<class T>
 class CBoundedValue
 {
 public:
-    CBoundedValue(T Min, T Max)
-        : m_Min(Min)
-        , m_Max(Max)
+    CBoundedValue()
+        : m_Min(0)
+        , m_Max(0)
         , m_Value(0)
     {}
 

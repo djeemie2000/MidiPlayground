@@ -3,22 +3,29 @@
 #include "BoundedValue.h"
 #include "Euclidian.h"
 #include "RotaryEncoder.h"
+#include "DigitalIn.h"
 
 const int  g_NumLeds = 24;
 Adafruit_24bargraph g_LedBar;
-CRotaryEncoder g_Encoder1;
-CRotaryEncoder g_Encoder2;
-
+CRotaryEncoder g_EncoderA;
+CRotaryEncoder g_EncoderB;
+const int PushButtonAPin = 10;
+CDigitalIn g_PushButtonA;
+const int PushButtonBPin = 11;
+CDigitalIn g_PushButtonB;
 
 const int ClockInPin = 2;
 const int ResetInPin = 3;
-const int ClockOutPin = 8;
+const int ClockOutAPin = 8;
+const int ClockOutBPin = 9;
+
 
 struct SController
 {
-  SController()
-   : m_PatternLength(1, g_NumLeds)
-   , m_PatternFills(0, g_NumLeds)
+  SController(int MaxPatternLength)
+   : m_MaxPatternLength(MaxPatternLength)
+   , m_PatternLength()
+   , m_PatternFills()
   {
     m_ChangeCounter = 0;
     m_State = false;
@@ -28,6 +35,7 @@ struct SController
     m_Reset = false;
     m_PatternLength.Set(16);
     m_PatternFills.Set(7);
+    m_Mode = 0;
   }
   
   void Begin()
@@ -37,10 +45,11 @@ struct SController
     m_CurrentStep = 0;
     m_Reset = false;
 
-    m_PatternLength.SetInterval(1, 16);
-    m_PatternLength.Set(12);
+    m_PatternLength.SetInterval(1, m_MaxPatternLength);
+    m_PatternLength.Set(m_MaxPatternLength);
     m_PatternFills.SetInterval(0, m_PatternLength.Get());
-    m_PatternFills.Set(7);
+    m_PatternFills.Set(m_PatternLength/3-2);
+    m_Mode = 0;
     m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
     m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
   }
@@ -49,7 +58,6 @@ struct SController
   {
     ++m_ChangeCounter;
     Advance();
-    //m_State = true;
   }
 
   void OnClockFall()
@@ -61,10 +69,6 @@ struct SController
   void OnReset()
   {
     m_Reset = true;
-    
-    //++m_ChangeCounter;    
-    //m_CurrentStep = 0;
-    //m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
   void Advance()
@@ -86,21 +90,34 @@ struct SController
     m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
-  void UpdatePattern(int DeltaLength, int DeltaFills)
+  void UpdatePattern(int DeltaParameter, bool ChangeMode)
   {
-    if(DeltaLength || DeltaFills)
+    if(ChangeMode)
     {
-      m_PatternLength.SetChange(DeltaLength);  
+      m_Mode = 1-m_Mode;
+    }
+    if(DeltaParameter)
+    {
+      if(m_Mode == 0)//length
+      {
+        m_PatternLength.SetChange(DeltaParameter);  
       
-      m_PatternFills.SetInterval(0, m_PatternLength.Get());
-      m_PatternFills.SetChange(DeltaFills);
-
+        m_PatternFills.SetInterval(0, m_PatternLength.Get());
+      }
+      else if(m_Mode==1)
+      {
+        m_PatternFills.SetChange(DeltaParameter);
+      }
+      
       m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
       m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
     }
   }
 
+  const int m_MaxPatternLength;
+
   int m_ChangeCounter;
+  
   bool m_State;
   
   uint32_t m_Pattern;
@@ -110,29 +127,39 @@ struct SController
 
   CBoundedValue<int> m_PatternLength;
   CBoundedValue<int> m_PatternFills;
+  int m_Mode;
 };
 
-SController g_Controller;
+SController g_ControllerA(16);
+int g_DebugChangeCounterA;
+
+SController g_ControllerB(8);
+int g_DebugChangeCounterB;
+
 
 void OnClockChange()
 {
   if(digitalRead(ClockInPin)==HIGH)
   {
-    g_Controller.OnClockRise();
+    g_ControllerA.OnClockRise();
+    g_ControllerB.OnClockRise();
   }
   else
   {
-    g_Controller.OnClockFall();
+    g_ControllerA.OnClockFall();
+    g_ControllerB.OnClockFall();
   }
   
-  digitalWrite(13, g_Controller.m_State?HIGH:LOW);
-  digitalWrite(ClockOutPin, g_Controller.m_State?HIGH:LOW);
+  //digitalWrite(13, g_ControllerA.m_State?HIGH:LOW);
+  digitalWrite(ClockOutAPin, g_ControllerA.m_State?HIGH:LOW);
+  digitalWrite(ClockOutBPin, g_ControllerB.m_State?HIGH:LOW);
 }
 
 void OnResetRise()
 {
-  g_Controller.OnReset();
-  digitalWrite(13, g_Controller.m_State?HIGH:LOW);
+  g_ControllerA.OnReset();
+  g_ControllerB.OnReset();
+//  digitalWrite(13, g_ControllerA.m_State?HIGH:LOW);
 }
 
 void setup() 
@@ -142,10 +169,17 @@ void setup()
   Serial.println("Uno euclidian rythm generator...");
   pinMode(ClockInPin, INPUT);
   pinMode(ResetInPin, INPUT_PULLUP);
-  pinMode(13, OUTPUT);
-  g_Controller.Begin();
-  g_Encoder1.Begin(4,5);
-  g_Encoder2.Begin(6,7);
+  pinMode(ClockOutAPin, OUTPUT);
+  pinMode(ClockOutBPin, OUTPUT);  
+  //pinMode(13, OUTPUT);
+  g_ControllerA.Begin();
+  g_DebugChangeCounterA = 0;
+  g_ControllerB.Begin();
+  g_DebugChangeCounterB = 0;
+  g_EncoderA.Begin(4,5);
+  g_PushButtonA.Begin(PushButtonAPin);
+  g_EncoderB.Begin(6,7);
+  g_PushButtonB.Begin(PushButtonBPin);
   g_LedBar.begin(0x70);//default address
   g_LedBar.clear();
   g_LedBar.writeDisplay();
@@ -155,47 +189,46 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(ResetInPin), OnResetRise, RISING);
 }
 
-void ShowLeds()
+void ShowLeds(const SController& Controller, int Offset)
 {
-  uint32_t Pattern = g_Controller.m_Pattern;
-  uint32_t ActiveMask = g_Controller.m_ActiveMask;
-  for(int Led = 0; Led<g_NumLeds; ++Led)
+  uint32_t Pattern = Controller.m_Pattern;
+  uint32_t ActiveMask = Controller.m_ActiveMask;
+  for(int Led = 0; Led<Controller.m_MaxPatternLength; ++Led)
   {
     uint32_t LedMask = 1<<Led;
     if(ActiveMask & LedMask)
     { // active => filled or not
       if(Pattern & LedMask)
       {
-        g_LedBar.setBar(Led, LED_RED);
+        g_LedBar.setBar(Led+Offset, LED_RED);
       }
       else
       {
-        g_LedBar.setBar(Led, LED_GREEN);
+        g_LedBar.setBar(Led+Offset, LED_GREEN);
       }
     }
     else
     { // not active
-      g_LedBar.setBar(Led, LED_OFF);
+      g_LedBar.setBar(Led+Offset, LED_OFF);
     }
   }
 
-  g_LedBar.setBar(g_Controller.m_CurrentStep, LED_YELLOW);
+  g_LedBar.setBar(Controller.m_CurrentStep+Offset, LED_YELLOW);
 
   g_LedBar.writeDisplay();
 }
 
-void SerialDebug()
+void SerialDebug(const SController& Controller, int& DebugChangeCounter)
 {
-  static int ChangeCounter = 0;
-  if(g_Controller.m_ChangeCounter != ChangeCounter)
+  if(Controller.m_ChangeCounter != DebugChangeCounter)
   {
-    ChangeCounter = g_Controller.m_ChangeCounter;
+    DebugChangeCounter = Controller.m_ChangeCounter;
     
-    Serial.print(ChangeCounter);
+    Serial.print(DebugChangeCounter);
     Serial.print(" : Step ");
-    Serial.print(g_Controller.m_CurrentStep);
+    Serial.print(Controller.m_CurrentStep);
     Serial.print(" ");
-    if(g_Controller.m_State)
+    if(Controller.m_State)
     {
       Serial.println("On");
     }
@@ -204,15 +237,15 @@ void SerialDebug()
       Serial.println("Off");
     }
 
-    if(g_Controller.m_State)
+    if(Controller.m_State)
     {
       Serial.print("L ");
-      Serial.print(g_Controller.m_PatternLength);
+      Serial.print(Controller.m_PatternLength);
       Serial.print(" F ");
-      Serial.println(g_Controller.m_PatternFills);
+      Serial.println(Controller.m_PatternFills);
     
-      Serial.println(g_Controller.m_ActiveMask, BIN);
-      Serial.println(g_Controller.m_Pattern, BIN);
+      Serial.println(Controller.m_ActiveMask, BIN);
+      Serial.println(Controller.m_Pattern, BIN);
     }
   }
 }
@@ -220,17 +253,22 @@ void SerialDebug()
 void loop() 
 {
   // the serial print below is for debug purposes:
-  SerialDebug();
+  SerialDebug(g_ControllerA, g_DebugChangeCounterA);
+  SerialDebug(g_ControllerB, g_DebugChangeCounterB);
 
   // read rotary encoders:
-  g_Encoder1.Read();
-  g_Encoder2.Read();
+  g_EncoderA.Read();
+  g_PushButtonA.Read();
+  g_EncoderB.Read();
+  g_PushButtonB.Read();
   // change mask length
   // change pattern fills
   // change pattern offset = bitwise rotation of pattern
-  g_Controller.UpdatePattern(g_Encoder1.GetChange(), g_Encoder2.GetChange());
+  g_ControllerA.UpdatePattern(g_EncoderA.GetChange(), g_PushButtonA.IsPressed());
+  g_ControllerB.UpdatePattern(g_EncoderB.GetChange(), g_PushButtonB.IsPressed());
 
-  ShowLeds();
+  ShowLeds(g_ControllerA, 0);
+  ShowLeds(g_ControllerB, 16);
       
   delay(1);//needed?
 }
