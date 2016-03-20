@@ -12,6 +12,7 @@ CRotaryEncoder g_Encoder2;
 
 const int ClockInPin = 2;
 const int ResetInPin = 3;
+const int ClockOutPin = 8;
 
 struct SController
 {
@@ -125,6 +126,7 @@ void OnClockChange()
   }
   
   digitalWrite(13, g_Controller.m_State?HIGH:LOW);
+  digitalWrite(ClockOutPin, g_Controller.m_State?HIGH:LOW);
 }
 
 void OnResetRise()
