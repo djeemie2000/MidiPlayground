@@ -9,15 +9,22 @@ const int  g_NumLeds = 24;
 Adafruit_24bargraph g_LedBar;
 CRotaryEncoder g_EncoderA;
 CRotaryEncoder g_EncoderB;
-const int PushButtonAPin = 10;
 CDigitalIn g_PushButtonA;
-const int PushButtonBPin = 11;
 CDigitalIn g_PushButtonB;
 
 const int ClockInPin = 2;
 const int ResetInPin = 3;
-const int ClockOutAPin = 8;
-const int ClockOutBPin = 9;
+
+const int EncoderAPinA = 4;
+const int EncoderAPinB = 5;
+const int PushButtonAPin = 6;
+
+const int EncoderBPinA = 7;
+const int EncoderBPinB = 8;
+const int PushButtonBPin = 9;
+
+const int ClockOutAPin = 10;
+const int ClockOutBPin = 11;
 
 
 struct SController
@@ -176,9 +183,9 @@ void setup()
   g_DebugChangeCounterA = 0;
   g_ControllerB.Begin();
   g_DebugChangeCounterB = 0;
-  g_EncoderA.Begin(4,5);
+  g_EncoderA.Begin(EncoderAPinA, EncoderAPinB);
   g_PushButtonA.Begin(PushButtonAPin);
-  g_EncoderB.Begin(6,7);
+  g_EncoderB.Begin(EncoderBPinA, EncoderBPinB);
   g_PushButtonB.Begin(PushButtonBPin);
   g_LedBar.begin(0x70);//default address
   g_LedBar.clear();
