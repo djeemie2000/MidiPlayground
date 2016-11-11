@@ -42,7 +42,6 @@ struct SController
     m_Reset = false;
     m_PatternLength.Set(16);
     m_PatternFills.Set(7);
-    m_Mode = 0;
   }
   
   void Begin()
@@ -56,7 +55,6 @@ struct SController
     m_PatternLength.Set(m_MaxPatternLength);
     m_PatternFills.SetInterval(0, m_PatternLength.Get());
     m_PatternFills.Set(m_PatternLength/3-2);
-    m_Mode = 0;
     m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
     m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
   }
@@ -97,25 +95,23 @@ struct SController
     m_State = (m_Pattern & (1<<m_CurrentStep));
   }
 
-  void UpdatePattern(int DeltaParameter, bool ChangeMode)
+  void UpdatePattern(int DeltaLength, int DeltaFills)
   {
-    if(ChangeMode)
+    if(DeltaLength)
     {
-      m_Mode = 1-m_Mode;
+      //Serial.println("Length changed");
+      m_PatternLength.SetChange(DeltaLength);       
+      m_PatternFills.SetInterval(0, m_PatternLength.Get());
     }
-    if(DeltaParameter)
+      
+    if(DeltaFills)
     {
-      if(m_Mode == 0)//length
-      {
-        m_PatternLength.SetChange(DeltaParameter);  
-      
-        m_PatternFills.SetInterval(0, m_PatternLength.Get());
-      }
-      else if(m_Mode==1)
-      {
-        m_PatternFills.SetChange(DeltaParameter);
-      }
-      
+    //Serial.println("Fills changed");
+      m_PatternFills.SetChange(DeltaFills);
+    }
+
+    if(DeltaFills || DeltaLength)
+    {  
       m_ActiveMask = euclidian::CalcActiveMask(m_PatternLength);
       m_Pattern = euclidian::CalcPattern(m_PatternLength, m_PatternFills);
     }
@@ -134,7 +130,6 @@ struct SController
 
   CBoundedValue<int> m_PatternLength;
   CBoundedValue<int> m_PatternFills;
-  int m_Mode;
 };
 
 SController g_ControllerA(16);
@@ -142,6 +137,8 @@ int g_DebugChangeCounterA;
 
 SController g_ControllerB(8);
 int g_DebugChangeCounterB;
+
+bool g_EditA;//true => editing A, false => editing B
 
 
 void OnClockChange()
@@ -179,6 +176,7 @@ void setup()
   pinMode(ClockOutAPin, OUTPUT);
   pinMode(ClockOutBPin, OUTPUT);  
   //pinMode(13, OUTPUT);
+  g_EditA = false;
   g_ControllerA.Begin();
   g_DebugChangeCounterA = 0;
   g_ControllerB.Begin();
@@ -268,11 +266,28 @@ void loop()
   g_PushButtonA.Read();
   g_EncoderB.Read();
   g_PushButtonB.Read();
+
+  if(g_PushButtonA.IsPressed())
+  {
+    g_EditA = true;// Edit A
+  }
+  else if(g_PushButtonB.IsPressed())
+  {
+    g_EditA = false;// Edit B
+  }
+  //else -> unchanged
+  
   // change mask length
   // change pattern fills
   // change pattern offset = bitwise rotation of pattern
-  g_ControllerA.UpdatePattern(g_EncoderA.GetChange(), g_PushButtonA.IsPressed());
-  g_ControllerB.UpdatePattern(g_EncoderB.GetChange(), g_PushButtonB.IsPressed());
+  if(g_EditA)
+  {
+    g_ControllerA.UpdatePattern(g_EncoderA.GetChange(), g_EncoderB.GetChange());
+  }
+  else
+  {
+    g_ControllerB.UpdatePattern(g_EncoderA.GetChange(), g_EncoderB.GetChange());
+  }
 
   ShowLeds(g_ControllerA, 0);
   ShowLeds(g_ControllerB, 16);
