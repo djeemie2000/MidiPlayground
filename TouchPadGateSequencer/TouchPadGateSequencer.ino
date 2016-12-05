@@ -3,6 +3,7 @@
 
 const int IrqPin = 8;  // Digital 2
 CCapacitiveTouchPad TouchPad;
+const int GateOutPin = 2;//TODO
 
 const int NumGates = 8;
 const int PatternLength = 8;//TODO 16
