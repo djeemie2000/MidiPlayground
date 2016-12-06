@@ -6,6 +6,7 @@ CCapacitiveTouchPad::CCapacitiveTouchPad()
     : m_IrqPin(2)
     , m_Address(0x5A)
     , m_TouchState(0)
+    , m_PrevTouchState(0)
 {
 }
 
@@ -112,6 +113,7 @@ void CCapacitiveTouchPad::Read()
         uint8_t Lsb = Wire.read();
         uint8_t Msb = Wire.read();
 
+	m_PrevTouchState = m_TouchState;
         m_TouchState = ((Msb << 8) | Lsb); //16bits that make up the touch states
     }
 }
@@ -129,3 +131,32 @@ bool CCapacitiveTouchPad::Get(int Pad) const
     }
     return false;
 }
+    
+bool CCapacitiveTouchPad::IsPushed(int Pad) const
+{
+	if(0<=Pad && Pad<GetNumPads())
+    {
+        return m_TouchState & (1<<Pad);
+    }
+    return false;
+}
+    
+bool CCapacitiveTouchPad::IsClicked(int Pad) const
+{
+    if(0<=Pad && Pad<GetNumPads())
+    {
+        return !(m_PrevTouchState & (1<<Pad)) && (m_TouchState & (1<<Pad));
+    }
+    return false;
+}
+    
+bool CCapacitiveTouchPad::IsReleased(int Pad) const
+{
+    if(0<=Pad && Pad<GetNumPads())
+    {
+        return (m_PrevTouchState & (1<<Pad)) && !(m_TouchState & (1<<Pad));
+    }
+    return false;
+}
+
+

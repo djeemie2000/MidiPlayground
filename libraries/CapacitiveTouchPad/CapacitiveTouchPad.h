@@ -21,11 +21,15 @@ public:
     void Read();
     int GetNumPads() const;
     bool Get(int Pad) const;
+    bool IsPushed(int Pad) const;
+    bool IsClicked(int Pad) const;
+    bool IsReleased(int Pad) const;
 
 private:
     int     m_IrqPin;
     uint8_t m_Address;
     uint16_t m_TouchState;// bit = 1 => touched, bit is 0 => not touched
+    uint16_t m_PrevTouchState;
 };
 
 #endif // CCAPACITIVETOUCHPAD_H
