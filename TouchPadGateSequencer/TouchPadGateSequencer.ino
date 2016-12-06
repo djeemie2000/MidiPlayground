@@ -1,9 +1,12 @@
 #include <Wire.h>
 #include "CapacitiveTouchPad.h"
+#include "DigitalIn.h"
 
-const int IrqPin = 8;  // Digital 2
+const int IrqPin = 8;  // 
 CCapacitiveTouchPad TouchPad;
 const int GateOutPin = 2;//TODO
+const int ClockInPin = 11;
+CDigitalIn g_ClockIn;
 
 const int NumGates = 8;
 const int PatternLength = 8;//TODO 16
@@ -16,8 +19,6 @@ enum EMode
   PatternOffMode = 3
 };
 
-bool g_TouchStates[NumGates]; //to keep track of the previous touch states, for toggling, ...
-
 EMode g_Mode[NumGates];
 bool g_Gate[NumGates];
 uint32_t g_Pattern[NumGates];
@@ -26,11 +27,6 @@ int g_Cursor;
 
 void setup()
 {
-  for(int idx = 0; idx<TouchPad.GetNumPads(); ++idx)
-  {
-    g_TouchStates[idx] = false;
-  }
-
   for(int idx = 0; idx<NumGates; ++idx)
   {
     g_Mode[idx] = LiveMode;
@@ -44,17 +40,23 @@ void setup()
   Serial.println("Touchpad Gate Sequencer...");
 
   TouchPad.Begin(IrqPin);//, 0x60, 0x80);
+  g_ClockIn.Begin(ClockInPin);
 }
 
 void loop()
 {
     // TODO read clock input to advance cursor when rising edge
+    g_ClockIn.Read();
+    if(g_ClockIn.IsRising())
+    {
+      g_Cursor = (g_Cursor+1)%PatternLength;
+    }
     
     TouchPad.Read();
     for(int Pad = 0; Pad<NumGates; ++Pad)
     {
       // switch mode <=> mode pad pressed and Pad pressed
-      if(TouchPad.Get(Pad))
+      if(TouchPad.IsClicked(Pad))
       {
         if(TouchPad.Get(8))
         {
@@ -80,7 +82,7 @@ void loop()
       }
       else if(g_Mode[Pad] == ToggleMode)
       {      
-        if(g_TouchStates[Pad]!=TouchPad.Get(Pad))
+        if(TouchPad.IsClicked(Pad))
         {
           g_Gate[Pad] = !g_Gate[Pad];//Toggle
         }
@@ -101,8 +103,6 @@ void loop()
         }
         g_Gate[Pad] = bitRead(g_Pattern[Pad], g_Cursor);
       }
-
-      g_TouchStates[Pad] = TouchPad.Get(Pad);        
 
       // outputs update
       digitalWrite(GateOutPin + Pad, g_Gate[Pad]?HIGH:LOW);
