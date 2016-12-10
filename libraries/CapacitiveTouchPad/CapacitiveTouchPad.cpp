@@ -104,6 +104,8 @@ void CCapacitiveTouchPad::Begin(int IrqPin, uint8_t TouchThreshold, uint8_t Rele
 
 void CCapacitiveTouchPad::Read()
 {
+    m_PrevTouchState = m_TouchState;
+
     if(!digitalRead(m_IrqPin))
     {
         //read the touch state from the MPR121
@@ -113,7 +115,6 @@ void CCapacitiveTouchPad::Read()
         uint8_t Lsb = Wire.read();
         uint8_t Msb = Wire.read();
 
-	m_PrevTouchState = m_TouchState;
         m_TouchState = ((Msb << 8) | Lsb); //16bits that make up the touch states
     }
 }
@@ -131,7 +132,7 @@ bool CCapacitiveTouchPad::Get(int Pad) const
     }
     return false;
 }
-    
+
 bool CCapacitiveTouchPad::IsPushed(int Pad) const
 {
 	if(0<=Pad && Pad<GetNumPads())
@@ -140,7 +141,7 @@ bool CCapacitiveTouchPad::IsPushed(int Pad) const
     }
     return false;
 }
-    
+
 bool CCapacitiveTouchPad::IsClicked(int Pad) const
 {
     if(0<=Pad && Pad<GetNumPads())
@@ -149,7 +150,7 @@ bool CCapacitiveTouchPad::IsClicked(int Pad) const
     }
     return false;
 }
-    
+
 bool CCapacitiveTouchPad::IsReleased(int Pad) const
 {
     if(0<=Pad && Pad<GetNumPads())
@@ -158,5 +159,3 @@ bool CCapacitiveTouchPad::IsReleased(int Pad) const
     }
     return false;
 }
-
-
