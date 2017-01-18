@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include "CapacitiveTouchPad.h"
 
-int IrqPin = 8;  // Digital 2
+int IrqPin = 12;  // Digital 2
 boolean touchStates[12]; //to keep track of the previous touch states
 
 CCapacitiveTouchPad TouchPad;
