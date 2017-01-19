@@ -13,14 +13,14 @@ void setupFastAnalogRead()
   // we can set it to 32 ~ 101
   // we can set it to 16 ~ 100
   // we can set it to 8  ~ 011
-  ADCSRA &= (0xF8 | 0x04);
+  ADCSRA &= (0xF8 | 0x02);
 }
 
 //noise g_Noise(NoiseOutPin); 
 CBitNoise g_BitNoise;
 
 struct SNoiseGen
-{
+{  
   int s_Bit;
   int s_Color;
   int s_Cntr;
@@ -54,7 +54,7 @@ struct SNoiseGen
   }
 };
 
-const int NumGenerators = 8;
+const int NumGenerators = 4;
 SNoiseGen g_NoiseGen[NumGenerators];
 int g_CurrentRead;
 
@@ -69,6 +69,7 @@ void setup()
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen);
+    g_NoiseGen[Gen].SetColor(Gen+1);
   }
   g_CurrentRead = 0;
 }
@@ -90,10 +91,11 @@ void Debug()
 void loop() 
 {
   // read one color at a time
-  g_NoiseGen[g_CurrentRead].SetColor(analogRead(AnalogInPin1+g_CurrentRead));
-  g_CurrentRead = (g_CurrentRead+1)%NumGenerators;
-  
+  //g_NoiseGen[g_CurrentRead].SetColor(analogRead(AnalogInPin1+g_CurrentRead));
+  //g_CurrentRead = (g_CurrentRead+1)%NumGenerators;
   //g_Noise.generate(Color1); 
+
+  int Color = analogRead(AnalogInPin1+g_CurrentRead);
 
   // generate next bit
   int CurrentBit = g_BitNoise.Generate();
@@ -103,6 +105,7 @@ void loop()
   {
     g_NoiseGen[Gen].Update(CurrentBit);
   }
+    delayMicroseconds(Color);
 //  ++g_Cntr;
 //  if(g_Color<=g_Cntr)
 //  {
