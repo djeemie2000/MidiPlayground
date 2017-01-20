@@ -16,7 +16,6 @@ void setupFastAnalogRead()
   ADCSRA &= (0xF8 | 0x02);
 }
 
-//noise g_Noise(NoiseOutPin); 
 CBitNoise g_BitNoise;
 
 struct SNoiseGen
@@ -56,7 +55,6 @@ struct SNoiseGen
 
 const int NumGenerators = 4;
 SNoiseGen g_NoiseGen[NumGenerators];
-int g_CurrentRead;
 
 void setup() 
 {
@@ -65,13 +63,11 @@ void setup()
   Serial.begin(115200);
   Serial.println("BitNoise...");
 
-//  pinMode(NoiseOutPin, OUTPUT);
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen);
     g_NoiseGen[Gen].SetColor(Gen+1);
   }
-  g_CurrentRead = 0;
 }
 
 void Debug()
@@ -90,12 +86,7 @@ void Debug()
 
 void loop() 
 {
-  // read one color at a time
-  //g_NoiseGen[g_CurrentRead].SetColor(analogRead(AnalogInPin1+g_CurrentRead));
-  //g_CurrentRead = (g_CurrentRead+1)%NumGenerators;
-  //g_Noise.generate(Color1); 
-
-  int Color = analogRead(AnalogInPin1+g_CurrentRead);
+  int GlobalColor = analogRead(AnalogInPin1);
 
   // generate next bit
   int CurrentBit = g_BitNoise.Generate();
@@ -105,14 +96,7 @@ void loop()
   {
     g_NoiseGen[Gen].Update(CurrentBit);
   }
-    delayMicroseconds(Color);
-//  ++g_Cntr;
-//  if(g_Color<=g_Cntr)
-//  {
-//    g_Bit = CurrentBit;
-//    g_Cntr = 0;
-//  }
-//  digitalWrite(NoiseOutPin, g_NoiseGen.s_Bit?HIGH:LOW);
+  delayMicroseconds(GlobalColor);
   
   Debug();
 }
