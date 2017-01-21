@@ -6,9 +6,13 @@ class CBitNoise
 {
 public:
     CBitNoise();
-    int Generate();
+    void Generate();
+    inline int Get() 
+    {     
+      return m_Register & 1; 
+    }
 
 private:
-    unsigned long int reg;
+    unsigned long int m_Register;
 };
 

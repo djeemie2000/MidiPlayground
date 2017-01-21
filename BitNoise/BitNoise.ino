@@ -1,9 +1,9 @@
 #include "BitNoise.h"
 
 const int AnalogInPin1 = A0;
-const int NoiseOutPin = 4;
+const int NoiseOutPin = 3;
 
-unsigned long g_DebugCounter;
+unsigned int g_DebugCounter;
 unsigned long g_Millis;
 
 void setupFastAnalogRead()
@@ -53,20 +53,16 @@ struct SNoiseGen
   void Update(int CurrentBit)
   {
     ++s_Cntr;
-    if(s_Color<=s_Cntr)
+    if(s_Color<s_Cntr)
     {
-      //s_Bit = CurrentBit;
       DigitalOutPortD(s_NoisePin, CurrentBit);
       s_Cntr = 0;
     }
-
-    //digitalWrite(s_NoisePin, s_Bit?HIGH:LOW);
-    //DigitalOutPortD(s_NoisePin, s_Bit);
   }
   
   void SetColor(int Color)
   {
-    s_Color = Color;
+    s_Color = Color-1;
   }
 };
 
@@ -118,7 +114,8 @@ void TimingBitNoise()
   int Dummy = 0;
   for(int Repeat = 0; Repeat<10000; ++Repeat)
   {
-    Dummy += g_BitNoise.Generate();
+    g_BitNoise.Generate();
+    Dummy += g_BitNoise.Get();
   }
 
   unsigned long After = millis();
@@ -203,19 +200,22 @@ void loop()
   while(true)
   {
     int GlobalColor = analogRead(AnalogInPin1);
-    GlobalColor = 0;//debug!!!!
+    //GlobalColor = 0;//debug!!!!
   
     // generate next bit
-    int CurrentBit = g_BitNoise.Generate();
-  
+    g_BitNoise.Generate();
+    int CurrentBit = g_BitNoise.Get();
+    
     // update generators, which all have their own color
-    for(int Gen = 0; Gen<NumGenerators; ++Gen)
-    {
-      g_NoiseGen[Gen].Update(CurrentBit);
-    }
+    g_NoiseGen[0].Update(CurrentBit);
+    g_NoiseGen[1].Update(CurrentBit);
+    g_NoiseGen[2].Update(CurrentBit);
+    g_NoiseGen[3].Update(CurrentBit);
+    //g_NoiseGen[4].Update(CurrentBit);
+    
     delayMicroseconds(GlobalColor);
     
     Debug();
-    }
+  }
 }
 
