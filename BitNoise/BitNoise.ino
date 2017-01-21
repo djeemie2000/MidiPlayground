@@ -55,12 +55,13 @@ struct SNoiseGen
     ++s_Cntr;
     if(s_Color<=s_Cntr)
     {
-      s_Bit = CurrentBit;
+      //s_Bit = CurrentBit;
+      DigitalOutPortD(s_NoisePin, CurrentBit);
       s_Cntr = 0;
     }
 
     //digitalWrite(s_NoisePin, s_Bit?HIGH:LOW);
-    DigitalOutPortD(s_NoisePin, s_Bit);
+    //DigitalOutPortD(s_NoisePin, s_Bit);
   }
   
   void SetColor(int Color)
@@ -96,14 +97,14 @@ void Debug()
   // for debugging / timing purposes
   ++g_DebugCounter;
   unsigned long Interval = 10000;//1024*16;
-  if(Interval<g_DebugCounter)
+  if(Interval<=g_DebugCounter)
   {
     unsigned long currMillis = millis();
     Serial.println();
     Serial.println(currMillis-g_Millis);
     Serial.println(g_DebugCounter);
     g_DebugCounter = 0;
-    g_Millis = currMillis;
+    g_Millis = millis();
   }
 }
 
@@ -215,6 +216,6 @@ void loop()
     delayMicroseconds(GlobalColor);
     
     Debug();
-  }
+    }
 }
 
