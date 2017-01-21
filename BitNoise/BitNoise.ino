@@ -1,4 +1,3 @@
-#include "werkstatt.h"
 #include "BitNoise.h"
 
 const int AnalogInPin1 = A0;
@@ -17,6 +16,21 @@ void setupFastAnalogRead()
   ADCSRA &= (0xF8 | 0x02);
 }
 
+// pins 0-7 are on port D
+void DigitalOutPortD(int Pin, int Value)
+{
+  // TODO support other ports
+  if(Value)
+  {
+    PORTD |= (1<<Pin);
+  }
+  else
+  {
+    PORTD &= ~(1<<Pin);
+  }
+}
+
+
 CBitNoise g_BitNoise;
 
 struct SNoiseGen
@@ -24,16 +38,16 @@ struct SNoiseGen
   int s_Bit;
   int s_Color;
   int s_Cntr;
-  int s_NoisePin;
+  int s_NoisePin; 
 
   void Begin(int NoisePin)
   {
     s_Bit = 0;
     s_Color = 0;
     s_Cntr = 0;
-    s_NoisePin = NoisePin;
+    s_NoisePin = NoisePin-1;
 
-    pinMode(s_NoisePin, OUTPUT);
+    pinMode(NoisePin, OUTPUT);
   }
   
   void Update(int CurrentBit)
@@ -45,7 +59,8 @@ struct SNoiseGen
       s_Cntr = 0;
     }
 
-    digitalWrite(s_NoisePin, s_Bit?HIGH:LOW);
+    //digitalWrite(s_NoisePin, s_Bit?HIGH:LOW);
+    DigitalOutPortD(s_NoisePin, s_Bit);
   }
   
   void SetColor(int Color)
@@ -123,7 +138,8 @@ void TimingDigitalWrite()
   const int NumRepeats = 10000;
   for(int Repeat = 0; Repeat<10000; ++Repeat)
   {
-    digitalWrite(NoiseOutPin, Repeat&1);
+    //digitalWrite(NoiseOutPin, Repeat&1);
+    DigitalOutPortD(3, Repeat&1);
   }
 
   unsigned long After = millis();
@@ -183,19 +199,22 @@ void TimingUpdate()
 
 void loop() 
 {
-  int GlobalColor = analogRead(AnalogInPin1);
-  GlobalColor = 0;//debug!!!!
-
-  // generate next bit
-  int CurrentBit = g_BitNoise.Generate();
-
-  // update generators, which all have their own color
-  for(int Gen = 0; Gen<NumGenerators; ++Gen)
+  while(true)
   {
-    g_NoiseGen[Gen].Update(CurrentBit);
-  }
-  delayMicroseconds(GlobalColor);
+    int GlobalColor = analogRead(AnalogInPin1);
+    GlobalColor = 0;//debug!!!!
   
-  Debug();
+    // generate next bit
+    int CurrentBit = g_BitNoise.Generate();
+  
+    // update generators, which all have their own color
+    for(int Gen = 0; Gen<NumGenerators; ++Gen)
+    {
+      g_NoiseGen[Gen].Update(CurrentBit);
+    }
+    delayMicroseconds(GlobalColor);
+    
+    Debug();
+  }
 }
 
