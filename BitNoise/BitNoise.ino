@@ -35,19 +35,17 @@ CBitNoise g_BitNoise;
 
 struct SNoiseGen
 {  
-  int s_Bit;
   int s_Color;
   int s_Cntr;
   int s_NoisePin; 
 
   void Begin(int NoisePin)
   {
-    s_Bit = 0;
     s_Color = 0;
     s_Cntr = 0;
     s_NoisePin = NoisePin-1;
 
-    pinMode(NoisePin, OUTPUT);
+    pinMode(s_NoisePin, OUTPUT);
   }
   
   void Update(int CurrentBit)
@@ -211,11 +209,10 @@ void loop()
     g_NoiseGen[1].Update(CurrentBit);
     g_NoiseGen[2].Update(CurrentBit);
     g_NoiseGen[3].Update(CurrentBit);
-    //g_NoiseGen[4].Update(CurrentBit);
     
     delayMicroseconds(GlobalColor);
     
-    Debug();
+    //Debug();
   }
 }
 
