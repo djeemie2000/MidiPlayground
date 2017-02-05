@@ -60,7 +60,7 @@ struct SNoiseGen
   
   void SetColor(int Color)
   {
-    s_Color = Color-1;
+    s_Color = Color;
   }
 };
 
@@ -77,13 +77,13 @@ void setup()
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen);
-    g_NoiseGen[Gen].SetColor(Gen+1);
+    g_NoiseGen[Gen].SetColor(Gen);
   }
 
-  TimingBitNoise();
-  TimingUpdate();
-  TimingDigitalWrite();
-  TimingAnalogRead();
+//  TimingBitNoise();
+//  TimingUpdate();
+//  TimingDigitalWrite();
+//  TimingAnalogRead();
 }
 
 void Debug()
@@ -195,11 +195,29 @@ void TimingUpdate()
 
 void loop() 
 {
+  int AnalogRead = 0;
+  int GlobalColor = 0;
   while(true)
   {
-    int GlobalColor = analogRead(AnalogInPin1);
-    //GlobalColor = 0;//debug!!!!
-  
+    // do one analog read at a time:
+    // global color, local color for each generator
+    if(AnalogRead == 0)
+    {
+      GlobalColor = analogRead(AnalogInPin1);
+      //GlobalColor = 0;//debug!!!!
+    }
+    else
+    {
+      // color/divider/octave: [0,16[
+      int LocalColor = analogRead(AnalogInPin1+AnalogRead)>>6;
+      g_NoiseGen[AnalogRead-1].SetColor(LocalColor);
+    }
+    ++AnalogRead;
+    if(NumGenerators<AnalogRead)
+    {
+      AnalogRead = 0;
+    }
+    
     // generate next bit
     g_BitNoise.Generate();
     int CurrentBit = g_BitNoise.Get();
