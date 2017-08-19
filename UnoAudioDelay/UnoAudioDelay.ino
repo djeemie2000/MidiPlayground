@@ -7,9 +7,16 @@ const int AnalogPinAudioIn = A0;
 const int AnalogPinDelayIn = A1;
 const int NumDacs = 1;
 
+#define DELAY_LINE_8BIT 1
+//Note: could make it byte instead of unsigned int => 8 bit but doubles the capacity
+
+#ifdef DELAY_LINE_8BIT
+const int DelayLineCapacity = 1024+256;
+isl::CDelayLine<byte, DelayLineCapacity> g_DelayLine;
+#else
 const int DelayLineCapacity = 512+128;
 isl::CDelayLine<unsigned int, DelayLineCapacity> g_DelayLine;
-//Note: could make it byte instead of unsigned int => 8 bit but doubles the capacity
+#endif
 
 unsigned int g_DebugCounter;
 unsigned long g_Millis;
@@ -27,7 +34,7 @@ void setupFastAnalogRead()
 void TestMcp()
 {
   Serial.println("Testing DAC...");
-  for(int Repeat = 0; Repeat<5; ++Repeat)
+  for(int Repeat = 0; Repeat<2; ++Repeat)
   {
     mcp48dac::SetOutput(4095, mcp48dac::Channel_A, mcp48dac::Gain_x1);// _x2 ???
     delay(500);
@@ -56,17 +63,8 @@ void setup()
   TestMcp();
 }
 
-void loop()
+void Debug()
 {
-  unsigned int Value = analogRead(AnalogPinAudioIn)<<2;//10 bits input 12 bits output  
-  g_DelayLine.Write(Value);
-  mcp48dac::SetOutput(g_DelayLine.Read(DelayLineCapacity-2), mcp48dac::Channel_A, mcp48dac::Gain_x1);// _x2 ???
-
-  // read sleep from 2nd AnalogIn 
-  int Delay = analogRead(AnalogPinDelayIn);
-  delayMicroseconds(Delay);
-  return;
-  
   ++g_DebugCounter;
   if(g_DebugCounter>20000)
   {
@@ -78,6 +76,31 @@ void loop()
     Serial.println(Elapsed);
 
     g_DebugCounter = 0;
-  }
+  }  
+}
+
+void loop()
+{
+#ifdef DELAY_LINE_8BIT
+  //10 bits input 8 bits delay line
+  byte Value = analogRead(AnalogPinAudioIn)>>2;  
+  g_DelayLine.Write(Value);
+  // 8 bits delay line 12 bits output
+  mcp48dac::SetOutput(g_DelayLine.Read(DelayLineCapacity-2)<<4, mcp48dac::Channel_A, mcp48dac::Gain_x1);
+#else
+  //10 bits input 12 bits output
+  unsigned int Value = analogRead(AnalogPinAudioIn)<<2;  
+  g_DelayLine.Write(Value);
+  mcp48dac::SetOutput(g_DelayLine.Read(DelayLineCapacity-2), mcp48dac::Channel_A, mcp48dac::Gain_x1);
+#endif
+
+  // read sleep time from 2nd AnalogIn 
+  int SleepTime = analogRead(AnalogPinDelayIn);
+  delayMicroseconds(SleepTime);
+
+  // TODO read actual delay from analog in
+  // TODO read sleep time and delay alternating -> g_
+ 
+  // Debug();  
 }
 
