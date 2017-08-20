@@ -4,17 +4,17 @@
 #include "IntDelayLine.h"
 
 const int AnalogPinAudioIn = A0;
-const int AnalogPinDelayIn = A1;
+const int AnalogPinSleepIn = A1;
 const int NumDacs = 1;
 
 #define DELAY_LINE_8BIT 1
 //Note: could make it byte instead of unsigned int => 8 bit but doubles the capacity
 
 #ifdef DELAY_LINE_8BIT
-const int DelayLineCapacity = 1024+256;
+const int DelayLineCapacity = 1024+512;
 isl::CDelayLine<byte, DelayLineCapacity> g_DelayLine;
 #else
-const int DelayLineCapacity = 512+128;
+const int DelayLineCapacity = 512+256;
 isl::CDelayLine<unsigned int, DelayLineCapacity> g_DelayLine;
 #endif
 
@@ -52,7 +52,7 @@ void setup()
   g_Millis = 0;
   
   pinMode(AnalogPinAudioIn, INPUT);
-  pinMode(AnalogPinDelayIn, INPUT);
+  pinMode(AnalogPinSleepIn, INPUT);
   setupFastAnalogRead();
 
   mcp48dac::Begin(NumDacs);  
@@ -95,7 +95,7 @@ void loop()
 #endif
 
   // read sleep time from 2nd AnalogIn 
-  int SleepTime = analogRead(AnalogPinDelayIn);
+  int SleepTime = analogRead(AnalogPinSleepIn);
   delayMicroseconds(SleepTime);
 
   // TODO read actual delay from analog in
