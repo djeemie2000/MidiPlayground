@@ -10,18 +10,15 @@ const int NumDacs = 1;
 #define DELAY_LINE_8BIT 1
 //Note: could make it byte instead of unsigned int => 8 bit but doubles the capacity
 
-#ifdef DELAY_LINE_8BIT
 const int DelayLineCapacity = 1024+512;
 isl::CDelayLine<byte, DelayLineCapacity> g_DelayLine;
-#else
-const int DelayLineCapacity = 512+256;
-isl::CDelayLine<unsigned int, DelayLineCapacity> g_DelayLine;
-#endif
 
+unsigned int g_DelayTime;
+
+//debug
 unsigned int g_DebugCounter;
 unsigned long g_Millis;
 
-int g_DelayTime;
 
 void setupFastAnalogRead()
 {
@@ -64,7 +61,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("AudioDelay...");
 
-  TestMcp();
+  //TestMcp();
 }
 
 void Debug()
@@ -88,38 +85,28 @@ void Debug()
 
 void loop()
 {
-  // [0,1024[ -> [0,1024+512[  
-  int DelayTime = 3*analogRead(AnalogPinSleepIn)/2;//DelayLineCapacity-2;
+  // [0,1024[ -> [0,1024+512[ delay time
+  unsigned int DelayTime = 3*analogRead(AnalogPinSleepIn)/2;
   
   // smooth delay time
-  if(g_DelayTime)
-  {
-    g_DelayTime = (DelayTime+7*g_DelayTime)>>3; 
-  }
-  else
-  {
-    g_DelayTime = DelayTime;
-  }
+  g_DelayTime = (7*g_DelayTime + DelayTime)>>3;
+  unsigned int SmoothDelayTime = g_DelayTime;
+  //unsigned int SmoothDelayTime = g_DelayTime(DelayTime);
 
-#ifdef DELAY_LINE_8BIT
-  //10 bits input 8 bits delay line
-  byte Value = analogRead(AnalogPinAudioIn)>>2;  
+  // 10 bits input -> 8 bits delay line
+  unsigned int AudioIn = analogRead(AnalogPinAudioIn);
+  byte Value = AudioIn>>2;   
   g_DelayLine.Write(Value);
-  // 8 bits delay line 12 bits output
-  mcp48dac::SetOutput(g_DelayLine.Read(g_DelayTime)<<4, mcp48dac::Channel_A, mcp48dac::Gain_x1);
-#else
-  //10 bits input 12 bits output
-  unsigned int Value = analogRead(AnalogPinAudioIn)<<2;  
-  g_DelayLine.Write(Value);
-  mcp48dac::SetOutput(g_DelayLine.Read(g_DelayTime), mcp48dac::Channel_A, mcp48dac::Gain_x1);
-#endif
+  
+  // 8 bits delay line -> 12 bits output
+  unsigned int AudioOut = g_DelayLine.Read(SmoothDelayTime)<<4; 
 
-  // read sleep time from 2nd AnalogIn 
-  int SleepTime = 96;//128;//analogRead(AnalogPinSleepIn);
+  // write audio out to DAC
+  mcp48dac::SetOutput(AudioOut, mcp48dac::Channel_A, mcp48dac::Gain_x1);
+
+  // short sleep to obtain the desired sampling frequency
+  const int SleepTime = 128;//96;//???????????????????
   delayMicroseconds(SleepTime);
-
-  // TODO read actual delay from analog in
-  // TODO read sleep time and delay alternating -> g_
  
   //Debug();  
 }
