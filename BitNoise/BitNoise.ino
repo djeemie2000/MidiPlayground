@@ -38,12 +38,14 @@ struct SNoiseGen
   int s_Color;
   int s_Cntr;
   int s_NoisePin; 
+  int s_CurrentBit;
 
   void Begin(int NoisePin)
   {
     s_Color = 0;
     s_Cntr = 0;
     s_NoisePin = NoisePin-1;
+    s_CurrentBit = 0;
 
     pinMode(s_NoisePin, OUTPUT);
   }
@@ -53,9 +55,10 @@ struct SNoiseGen
     ++s_Cntr;
     if(s_Color<s_Cntr)
     {
-      DigitalOutPortD(s_NoisePin, CurrentBit);
+      s_CurrentBit = CurrentBit;
       s_Cntr = 0;
     }
+    DigitalOutPortD(s_NoisePin, s_CurrentBit);
   }
   
   void SetColor(int Color)
