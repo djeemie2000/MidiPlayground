@@ -2,6 +2,7 @@
 
 const int AnalogInPin1 = A0;
 const int NoiseOutPin = 3;
+const int GatePin = 0;//wrt PORTB
 
 unsigned int g_DebugCounter;
 unsigned long g_Millis;
@@ -30,6 +31,13 @@ void DigitalOutPortD(int Pin, int Value)
   }
 }
 
+int DigitalInPortB(int Pin)
+{
+  // TODO support other ports
+  return (PORTB >> Pin) & 1;
+}
+
+
 
 CBitNoise g_BitNoise;
 
@@ -39,15 +47,19 @@ struct SNoiseGen
   int s_Cntr;
   int s_NoisePin; 
   int s_CurrentBit;
+  int s_GatePin;
 
-  void Begin(int NoisePin)
+  void Begin(int NoisePin, int GatePin)
   {
     s_Color = 0;
     s_Cntr = 0;
     s_NoisePin = NoisePin-1;
     s_CurrentBit = 0;
+    s_GatePin = GatePin;
 
     pinMode(s_NoisePin, OUTPUT);
+    pinMode(s_GatePin+8, INPUT_PULLUP);//by default, gate is on 
+    // +8 : PORTB offset is 8
   }
   
   void Update(int CurrentBit)
@@ -58,7 +70,11 @@ struct SNoiseGen
       s_CurrentBit = CurrentBit;
       s_Cntr = 0;
     }
-    DigitalOutPortD(s_NoisePin, s_CurrentBit);
+
+    // fast digital pin input read
+    // Gate => current bit, no gate => low
+    int Gate = DigitalInPortB(s_GatePin);
+    DigitalOutPortD(s_NoisePin, Gate ? s_CurrentBit : 0);
   }
   
   void SetColor(int Color)
@@ -79,7 +95,7 @@ void setup()
 
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
-    g_NoiseGen[Gen].Begin(NoiseOutPin+Gen);
+    g_NoiseGen[Gen].Begin(NoiseOutPin+Gen, GatePin+Gen);
     g_NoiseGen[Gen].SetColor(Gen);
   }
 
