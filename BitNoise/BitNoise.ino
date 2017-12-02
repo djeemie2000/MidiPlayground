@@ -84,7 +84,7 @@ struct SNoiseGen
   }
 };
 
-const int NumGenerators = 3;
+const int NumGenerators = 4;
 SNoiseGen g_NoiseGen[NumGenerators];
 
 void setup() 
@@ -277,6 +277,7 @@ void loop()
     g_NoiseGen[1].Update(CurrentBit);
     g_NoiseGen[2].Update(CurrentBit);
     g_NoiseGen[3].Update(CurrentBit);
+    g_NoiseGen[4].Update(CurrentBit);   
     
     delayMicroseconds(GlobalColor);
     
