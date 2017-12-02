@@ -14,15 +14,15 @@ void setupFastAnalogRead()
   // we can set it to 32 ~ 101
   // we can set it to 16 ~ 100
   // we can set it to 8  ~ 011
-  ADCSRA &= (0xF8 | 0x02);
+  ADCSRA &= (0xF8 | 0x04);
 }
 
-// pins 0-7 are on port D
+// arduino nano: pins D2-D7 are PD2-PD7
 void DigitalOutPortD(int Pin, int Value)
 {
   // TODO support other ports
   if(Value)
-  {
+  {  
     PORTD |= (1<<Pin);
   }
   else
@@ -31,10 +31,11 @@ void DigitalOutPortD(int Pin, int Value)
   }
 }
 
+// arduino nano: pins D8-D12 are PB0-PB4 
 int DigitalInPortB(int Pin)
 {
   // TODO support other ports
-  return (PORTB >> Pin) & 1;
+  return (PINB >> Pin) & 1;
 }
 
 
@@ -83,7 +84,7 @@ struct SNoiseGen
   }
 };
 
-const int NumGenerators = 4;
+const int NumGenerators = 3;
 SNoiseGen g_NoiseGen[NumGenerators];
 
 void setup() 
@@ -93,10 +94,16 @@ void setup()
   Serial.begin(115200);
   Serial.println("BitNoise...");
 
+  // global color in
+  pinMode(AnalogInPin1, INPUT);
+  
+  // generators
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen, GatePin+Gen);
     g_NoiseGen[Gen].SetColor(Gen);
+    // local color in
+    pinMode(AnalogInPin1+1+Gen, INPUT);
   }
 
 //  TimingBitNoise();
@@ -105,7 +112,7 @@ void setup()
 //  TimingAnalogRead();
 }
 
-void Debug()
+void Debug(int GlobalColor)
 {
   // for debugging / timing purposes
   ++g_DebugCounter;
@@ -118,7 +125,29 @@ void Debug()
     Serial.println(g_DebugCounter);
     g_DebugCounter = 0;
     g_Millis = millis();
+
+    Serial.print("Color ");
+    Serial.println(GlobalColor);
+    for(int Gen = 0; Gen<NumGenerators; ++Gen)
+    {
+      Serial.println(g_NoiseGen[Gen].s_Color);
+    }
+
+
+    return;
+
+    // debug gate in
+    for(int Gen = 0; Gen<NumGenerators; ++Gen)
+    {
+      Serial.println(DigitalInPortB(Gen));
+    }
+    // debug analog in
+    for(int Gen = 0; Gen<1+NumGenerators; ++Gen)
+    {
+      Serial.println(analogRead(AnalogInPin1+Gen));
+    }
   }
+
 }
 
 void TimingBitNoise()
@@ -222,11 +251,13 @@ void loop()
     // global color, local color for each generator
     if(AnalogRead == 0)
     {
-      GlobalColor = analogRead(AnalogInPin1);
+      // high Vin => high pitch, low Vin => low pitch
+      GlobalColor = 1023-analogRead(AnalogInPin1);
       //GlobalColor = 0;//debug!!!!
     }
     else
     {
+      // 'graininess' : low voltage => low gaininess = low color, high voltage => high graininess = high color
       // color/divider/octave: [0,16[
       int LocalColor = analogRead(AnalogInPin1+AnalogRead)>>6;
       g_NoiseGen[AnalogRead-1].SetColor(LocalColor);
@@ -237,7 +268,7 @@ void loop()
       AnalogRead = 0;
     }
     
-    // generate next bit
+    // generate next bit of noise
     g_BitNoise.Generate();
     int CurrentBit = g_BitNoise.Get();
     
@@ -249,7 +280,7 @@ void loop()
     
     delayMicroseconds(GlobalColor);
     
-    //Debug();
+    //Debug(GlobalColor);
   }
 }
 
