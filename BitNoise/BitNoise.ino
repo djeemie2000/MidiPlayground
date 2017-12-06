@@ -1,8 +1,11 @@
 #include "BitNoise.h"
 
-const int AnalogInPin1 = A0;
+const int AnalogInPin = A0;
 const int NoiseOutPin = 3;
 const int GatePin = 0;//wrt PORTB
+
+const int NumAnalogInPins = 8;
+int g_AnalogInValue[NumAnalogInPins];
 
 unsigned int g_DebugCounter;
 unsigned long g_Millis;
@@ -95,15 +98,17 @@ void setup()
   Serial.println("BitNoise...");
 
   // global color in
-  pinMode(AnalogInPin1, INPUT);
+  for(int Pin = 0; Pin<NumAnalogInPins; ++Pin)
+  {
+    pinMode(AnalogInPin+Pin, INPUT);
+    g_AnalogInValue[Pin] = 0;
+  }
   
   // generators
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen, GatePin+Gen);
     g_NoiseGen[Gen].SetColor(Gen);
-    // local color in
-    pinMode(AnalogInPin1+1+Gen, INPUT);
   }
 
 //  TimingBitNoise();
@@ -126,28 +131,21 @@ void Debug(int GlobalColor)
     g_DebugCounter = 0;
     g_Millis = millis();
 
-    Serial.print("Color ");
+    Serial.println("AnalogIn ");
+    for(int Pin = 0; Pin<NumAnalogInPins; ++Pin)
+    {
+      Serial.println(g_AnalogInValue[Pin]);
+    }
+
+    Serial.print("Pitch ");
     Serial.println(GlobalColor);
+    
+    Serial.println("Grain ");
     for(int Gen = 0; Gen<NumGenerators; ++Gen)
     {
       Serial.println(g_NoiseGen[Gen].s_Color);
     }
-
-
-    return;
-
-    // debug gate in
-    for(int Gen = 0; Gen<NumGenerators; ++Gen)
-    {
-      Serial.println(DigitalInPortB(Gen));
-    }
-    // debug analog in
-    for(int Gen = 0; Gen<1+NumGenerators; ++Gen)
-    {
-      Serial.println(analogRead(AnalogInPin1+Gen));
-    }
   }
-
 }
 
 void TimingBitNoise()
@@ -204,7 +202,7 @@ void TimingAnalogRead()
   int Dummy = 0;
   for(int Repeat = 0; Repeat<10000; ++Repeat)
   {
-    Dummy += analogRead(AnalogInPin1);
+    Dummy += analogRead(AnalogInPin);
   }
 
   unsigned long After = millis();
@@ -240,6 +238,11 @@ void TimingUpdate()
   Serial.println(After-Before);
 }
 
+int CombineCV(int idx1, int idx2)
+{
+  int Combined = g_AnalogInValue[idx1]+g_AnalogInValue[idx2];
+  return Combined<1024 ? Combined : 1023;
+}
 
 void loop() 
 {
@@ -247,23 +250,40 @@ void loop()
   int GlobalColor = 0;
   while(true)
   {
+
+    
     // do one analog read at a time:
+    g_AnalogInValue[AnalogRead] = analogRead(AnalogInPin+AnalogRead);
+    
     // global color, local color for each generator
-    if(AnalogRead == 0)
-    {
-      // high Vin => high pitch, low Vin => low pitch
-      GlobalColor = 1023-analogRead(AnalogInPin1);
-      //GlobalColor = 0;//debug!!!!
-    }
-    else
-    {
-      // 'graininess' : low voltage => low gaininess = low color, high voltage => high graininess = high color
-      // color/divider/octave: [0,16[
-      int LocalColor = analogRead(AnalogInPin1+AnalogRead)>>6;
-      g_NoiseGen[AnalogRead-1].SetColor(LocalColor);
-    }
+
+    // high Vin => high pitch, low Vin => low pitch
+    GlobalColor = 1023-CombineCV(0,5);
+
+    // 'graininess' : low voltage => low gaininess = low color, high voltage => high graininess = high color
+    // color/divider/octave: [0,16[
+    g_NoiseGen[0].SetColor(CombineCV(1,6)>>6);
+    g_NoiseGen[1].SetColor(CombineCV(2,6)>>6);
+    g_NoiseGen[2].SetColor(CombineCV(3,7)>>6);
+    g_NoiseGen[3].SetColor(CombineCV(4,7)>>6);
+    
+//    if(AnalogRead == 0 || AnalogRead == 5)
+//    {
+//      // high Vin => high pitch, low Vin => low pitch
+//      GlobalColor = 1023-CombineCV(0,5);
+//      //GlobalColor = 0;//debug!!!!
+//    }
+//    else if(0<AnalogRead && AnalogRead<5)
+//    {
+//      // 'graininess' : low voltage => low gaininess = low color, high voltage => high graininess = high color
+//      // color/divider/octave: [0,16[
+//      int
+//      int LocalColor = analogRead(AnalogInPin+AnalogRead)>>6;
+//      g_NoiseGen[AnalogRead-1].SetColor(LocalColor);
+//    }
+    
     ++AnalogRead;
-    if(NumGenerators<AnalogRead)
+    if(NumAnalogInPins<=AnalogRead)
     {
       AnalogRead = 0;
     }
@@ -277,7 +297,6 @@ void loop()
     g_NoiseGen[1].Update(CurrentBit);
     g_NoiseGen[2].Update(CurrentBit);
     g_NoiseGen[3].Update(CurrentBit);
-    g_NoiseGen[4].Update(CurrentBit);   
     
     delayMicroseconds(GlobalColor);
     
