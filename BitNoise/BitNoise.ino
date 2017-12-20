@@ -52,12 +52,13 @@ struct SNoiseGen
   int s_NoisePin; 
   int s_CurrentBit;
   int s_GatePin;
+  int s_Gate;
 
   void Begin(int NoisePin, int GatePin)
   {
     s_Color = 0;
     s_Cntr = 0;
-    s_NoisePin = NoisePin-1;
+    s_NoisePin = NoisePin;//-1;
     s_CurrentBit = 0;
     s_GatePin = GatePin;
 
@@ -77,8 +78,8 @@ struct SNoiseGen
 
     // fast digital pin input read
     // Gate => current bit, no gate => low
-    int Gate = DigitalInPortB(s_GatePin);
-    DigitalOutPortD(s_NoisePin, Gate ? s_CurrentBit : 0);
+    s_Gate = DigitalInPortB(s_GatePin);
+    DigitalOutPortD(s_NoisePin, s_Gate ? s_CurrentBit : 0);
   }
   
   void SetColor(int Color)
@@ -108,7 +109,7 @@ void setup()
   for(int Gen = 0; Gen<NumGenerators; ++Gen)
   {
     g_NoiseGen[Gen].Begin(NoiseOutPin+Gen, GatePin+Gen);
-    g_NoiseGen[Gen].SetColor(Gen);
+    g_NoiseGen[Gen].SetColor(0);
   }
 
 //  TimingBitNoise();
@@ -144,6 +145,12 @@ void Debug(int GlobalColor)
     for(int Gen = 0; Gen<NumGenerators; ++Gen)
     {
       Serial.println(g_NoiseGen[Gen].s_Color);
+    }
+
+    Serial.println("Gate ");
+    for(int Gen = 0; Gen<NumGenerators; ++Gen)
+    {
+      Serial.println(g_NoiseGen[Gen].s_Gate);
     }
   }
 }
@@ -256,7 +263,6 @@ void loop()
     g_AnalogInValue[AnalogRead] = analogRead(AnalogInPin+AnalogRead);
     
     // global color, local color for each generator
-
     // high Vin => high pitch, low Vin => low pitch
     GlobalColor = 1023-CombineCV(0,5);
 
@@ -266,22 +272,7 @@ void loop()
     g_NoiseGen[1].SetColor(CombineCV(2,6)>>6);
     g_NoiseGen[2].SetColor(CombineCV(3,7)>>6);
     g_NoiseGen[3].SetColor(CombineCV(4,7)>>6);
-    
-//    if(AnalogRead == 0 || AnalogRead == 5)
-//    {
-//      // high Vin => high pitch, low Vin => low pitch
-//      GlobalColor = 1023-CombineCV(0,5);
-//      //GlobalColor = 0;//debug!!!!
-//    }
-//    else if(0<AnalogRead && AnalogRead<5)
-//    {
-//      // 'graininess' : low voltage => low gaininess = low color, high voltage => high graininess = high color
-//      // color/divider/octave: [0,16[
-//      int
-//      int LocalColor = analogRead(AnalogInPin+AnalogRead)>>6;
-//      g_NoiseGen[AnalogRead-1].SetColor(LocalColor);
-//    }
-    
+        
     ++AnalogRead;
     if(NumAnalogInPins<=AnalogRead)
     {
